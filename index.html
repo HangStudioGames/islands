@@ -1,0 +1,1560 @@
+<meta charset="utf-8">
+<title>Islas</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito+Sans:opsz,wght@6..12,400;6..12,700;6..12,800&display=swap">
+<style>
+/* Layout: a game table. The archipelago chart on the left, the "what you do now" panel and the seats on the right, the logbook below. */
+:root {
+  --bg: #e3edef;
+  --surface: #ffffff;
+  --surface-2: #eff5f6;
+  --ink: #12303a;
+  --muted: #557079;
+  --line: #c6d8dc;
+  --sea: #b4dbe2;
+  --sea-2: #9ccbd5;
+  --land: #ecdcab;
+  --land-edge: #b6975a;
+  --ash: #4c4541;
+  --lava: #d9472b;
+  --accent: #1b4552;
+  --accent-ink: #ffffff;
+  --gold: #c58b2a;
+  --gold-bg: #f8ecd2;
+  --ok: #23824c;
+  --bad: #c03a2b;
+  --bad-bg: #fbe3df;
+  --focus: #2a72d8;
+  --boat: #6b4a2a;
+  --p0: #d4423a; --p1: #2e6ccc; --p2: #e2a91c; --p3: #2b9354; --p4: #8a4cc8;
+  --font-display: "Lilita One", "Arial Rounded MT Bold", "Trebuchet MS", sans-serif;
+  --font-body: "Nunito Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --r: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c1a1f; --surface: #13252b; --surface-2: #1a3038; --ink: #e2eef0; --muted: #8fb0b8; --line: #27434c;
+    --sea: #12363f; --sea-2: #0f2d35; --land: #bba674; --land-edge: #87713f; --ash: #2d2826; --lava: #f0613f;
+    --accent: #84c9d3; --accent-ink: #0c1a1f; --gold: #e2b45a; --gold-bg: #33291a;
+    --ok: #4cc27d; --bad: #f07563; --bad-bg: #3a1d1a; --focus: #7aaaff; --boat: #d9b98d;
+    --p0: #ee5f55; --p1: #5a8ff0; --p2: #f1c140; --p3: #3fb46e; --p4: #a873e6;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c1a1f; --surface: #13252b; --surface-2: #1a3038; --ink: #e2eef0; --muted: #8fb0b8; --line: #27434c;
+  --sea: #12363f; --sea-2: #0f2d35; --land: #bba674; --land-edge: #87713f; --ash: #2d2826; --lava: #f0613f;
+  --accent: #84c9d3; --accent-ink: #0c1a1f; --gold: #e2b45a; --gold-bg: #33291a;
+  --ok: #4cc27d; --bad: #f07563; --bad-bg: #3a1d1a; --focus: #7aaaff; --boat: #d9b98d;
+  --p0: #ee5f55; --p1: #5a8ff0; --p2: #f1c140; --p3: #3fb46e; --p4: #a873e6;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.app { max-width: 1240px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 14px 48px; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 400; margin: 0; text-wrap: balance; letter-spacing: .01em; }
+h2 { font-size: 22px; }
+h3 { font-size: 17px; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* Buttons */
+.btn { appearance: none; border: 1.5px solid var(--line); background: var(--surface); border-radius: 10px; padding: 8px 14px; cursor: pointer; font-weight: 700; line-height: 1.2; }
+.btn:hover:not(:disabled) { border-color: var(--accent); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.small { padding: 5px 10px; font-size: 13px; border-radius: 8px; }
+.btn.sel { background: var(--gold-bg); border-color: var(--gold); }
+.btn.ghost { background: transparent; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.stack { display: flex; flex-direction: column; gap: 12px; }
+input[type=text] { border: 1.5px solid var(--line); background: var(--surface); border-radius: 10px; padding: 8px 12px; min-width: 0; }
+select { border: 1.5px solid var(--line); background: var(--surface); border-radius: 10px; padding: 7px 10px; max-width: 100%; }
+.err { color: var(--bad); font-weight: 700; }
+.note { color: var(--muted); font-size: 13px; }
+
+/* Language selector */
+.langsel { display: inline-flex; border: 1.5px solid var(--line); border-radius: 999px; overflow: hidden; background: var(--surface); flex: none; }
+.langsel button { appearance: none; border: 0; background: transparent; padding: 4px 11px; font-size: 13px; font-weight: 800; letter-spacing: .06em; cursor: pointer; color: var(--muted); }
+.langsel button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.homebar { display: flex; justify-content: flex-end; padding-block: 2px 0; }
+
+/* Home */
+.hero { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 28px; align-items: center; padding-block: 10px 26px; }
+.hero h1 { font-size: clamp(56px, 11vw, 112px); line-height: .9; color: var(--accent); }
+.hero .lede { font-size: 18px; margin-top: 10px; max-width: 34ch; }
+.hero .facts { margin-top: 14px; color: var(--muted); }
+.hero svg { width: 100%; height: auto; display: block; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.open-list { display: flex; flex-direction: column; gap: 6px; }
+.open-item { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 10px; background: var(--surface-2); border-radius: 10px; }
+.code { font-family: var(--font-display); letter-spacing: .12em; font-size: 15px; }
+.bigcode { font-family: var(--font-display); font-size: 54px; letter-spacing: .14em; color: var(--accent); line-height: 1; }
+
+/* Game */
+.top { display: flex; align-items: center; gap: 10px 18px; flex-wrap: wrap; padding-block: 2px 12px; }
+.logo { font-family: var(--font-display); font-size: 30px; color: var(--accent); line-height: 1; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; min-width: 0; }
+.chip { background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; font-size: 13px; white-space: nowrap; }
+.chip.hot { background: var(--bad-bg); border-color: var(--lava); color: var(--bad); font-weight: 700; }
+.board { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(320px, 1fr); gap: 16px; align-items: start; }
+.mapwrap { background: var(--sea); border-radius: 18px; overflow: hidden; border: 1px solid var(--line); position: relative; }
+.mapwrap svg { display: block; width: 100%; height: auto; }
+.side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.panel.turn { border: 2px solid var(--gold); box-shadow: 0 0 0 4px var(--gold-bg); }
+.eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 800; }
+.chars { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; }
+.char { text-align: left; border: 1.5px solid var(--line); background: var(--surface-2); border-radius: 12px; padding: 10px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; }
+.char:hover:not(:disabled) { border-color: var(--accent); }
+.char:disabled { opacity: .45; cursor: not-allowed; }
+.char b { font-family: var(--font-display); font-weight: 400; font-size: 17px; }
+.char small { font-size: 12px; color: var(--muted); line-height: 1.3; }
+.char small b { font-family: var(--font-body); font-weight: 800; font-size: 12px; }
+.char .st { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--bad); }
+.sub { border-top: 1px dashed var(--line); padding-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.mvrow { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; padding: 6px 8px; background: var(--surface-2); border-radius: 10px; }
+.peek { display: flex; gap: 8px; flex-wrap: wrap; }
+.ecard { width: 84px; height: 112px; border-radius: 10px; border: 2px solid var(--lava); background: var(--bad-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; padding: 6px; text-align: center; font-weight: 800; font-size: 13px; }
+.ecard:hover { outline: 3px solid var(--gold); }
+.ecard .sz { font-size: 11px; font-weight: 700; color: var(--muted); }
+
+/* Seats */
+.seats { display: flex; flex-direction: column; gap: 8px; }
+.seat { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; padding: 10px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.seat.now { border-color: var(--gold); box-shadow: inset 4px 0 0 var(--gold); }
+.dot { width: 14px; height: 14px; border-radius: 50%; display: inline-block; flex: none; }
+.seat .nm { font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seat .pv { font-family: var(--font-display); font-size: 20px; text-align: right; }
+.seat .det { grid-column: 2 / 4; display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: var(--muted); align-items: center; }
+.res { display: inline-flex; align-items: center; gap: 3px; font-weight: 700; color: var(--ink); }
+.res svg { width: 16px; height: 16px; }
+.mini { display: inline-flex; gap: 3px; }
+.mini span { font-size: 11px; font-weight: 800; border-radius: 5px; padding: 0 4px; border: 1px solid var(--line); color: var(--ink); }
+.mini span.x { opacity: .35; text-decoration: line-through; }
+.mini span.p { background: var(--gold-bg); border-color: var(--gold); }
+.tag { font-size: 11px; font-weight: 800; padding: 1px 6px; border-radius: 6px; background: var(--surface-2); color: var(--muted); margin-left: 6px; }
+.log { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 16px; max-height: 240px; overflow: auto; font-size: 13px; }
+.log ol { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; }
+.banner { background: var(--bad-bg); border: 1.5px solid var(--lava); color: var(--ink); border-radius: 12px; padding: 10px 12px; font-size: 14px; }
+details.rules { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 16px; margin-top: 16px; }
+details.rules summary { cursor: pointer; font-weight: 800; }
+details.rules .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px 24px; margin-top: 10px; font-size: 14px; }
+details.rules ul { margin: 6px 0 0; padding-left: 18px; }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+tr.win td { font-weight: 800; background: var(--gold-bg); }
+
+/* Map */
+.isl { cursor: default; }
+.isl.tgt { cursor: pointer; }
+.isl.tgt .shore { stroke: var(--gold); stroke-width: 5; stroke-dasharray: 8 5; }
+.isl.erupt .shore { stroke: var(--lava); stroke-width: 6; }
+.isl text { font-family: var(--font-body); }
+.isl .nm { font-weight: 800; font-size: 15px; fill: var(--ink); }
+.isl .kind { font-size: 11px; fill: var(--muted); font-weight: 700; }
+.tok-n { font-weight: 800; font-size: 12px; fill: #fff; stroke: rgba(0,0,0,.5); stroke-width: 2.5px; paint-order: stroke; }
+.boat-line { stroke: var(--boat); stroke-width: 3; stroke-dasharray: 2 6; stroke-linecap: round; }
+.boat-line.rm { stroke: var(--lava); stroke-width: 4; }
+.boat-line.add { stroke: var(--ok); stroke-width: 4; stroke-dasharray: 8 5; }
+
+@media (max-width: 900px) {
+  .board { grid-template-columns: minmax(0, 1fr); }
+  .hero { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .isl.erupt .shore { animation: glow 1.2s ease-in-out infinite alternate; }
+  @keyframes glow { from { stroke-opacity: .4; } to { stroke-opacity: 1; } }
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="r0" viewBox="0 0 20 20"><path d="M4 6 L5 2 L8 4.5 Z M16 6 L15 2 L12 4.5 Z" fill="#e48aa0" stroke="#a9546b" stroke-width="1"/><circle cx="10" cy="11" r="7.5" fill="#ef9fb2" stroke="#a9546b" stroke-width="1.2"/><ellipse cx="10" cy="13" rx="3.4" ry="2.4" fill="#e07e97" stroke="#a9546b" stroke-width="1"/><circle cx="8.8" cy="13" r=".8" fill="#7b3245"/><circle cx="11.2" cy="13" r=".8" fill="#7b3245"/><circle cx="7.3" cy="9" r=".9" fill="#3a1d25"/><circle cx="12.7" cy="9" r=".9" fill="#3a1d25"/></symbol>
+    <symbol id="r1" viewBox="0 0 20 20"><path d="M10 18 L2.5 8.5 A8.2 8.2 0 0 1 17.5 8.5 Z" fill="#f6e6cb" stroke="#a7804d" stroke-width="1.3" stroke-linejoin="round"/><path d="M10 18 L5.5 4.5 M10 18 L10 2.5 M10 18 L14.5 4.5" stroke="#a7804d" stroke-width="1"/><rect x="8" y="16.5" width="4" height="2.5" rx="1" fill="#d9b98a" stroke="#a7804d" stroke-width=".8"/></symbol>
+    <symbol id="r2" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="#7d4c2c" stroke="#4a2a16" stroke-width="1.2"/><circle cx="7.6" cy="7.6" r="1.2" fill="#2e180b"/><circle cx="11.4" cy="6.9" r="1.2" fill="#2e180b"/><circle cx="9.4" cy="10.6" r="1.2" fill="#2e180b"/></symbol>
+  </defs>
+</svg>
+
+<div class="app" id="app"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
+<script>
+/*ENGINE-START*/
+// El motor no contiene textos: la bitácora guarda sucesos como [clave, ...datos] y cada pantalla los
+// traduce a su idioma (fmtLog), así cada jugador puede jugar en el idioma que prefiera.
+const ISL = [
+  { sz: 2, r: [0, 1, 2] }, // Isla Mayor
+  { sz: 1, r: [0, 1] },    // Ensenada
+  { sz: 1, r: [1, 2] },    // Arrecife
+  { sz: 1, r: [2, 0] },    // Palmar
+  { sz: 0, r: [0] },       // Jabalí
+  { sz: 0, r: [1] },       // Nácar
+  { sz: 0, r: [2] },       // Cocotal
+];
+const TH = [1, 2, 3];          // erupción: pequeña, mediana, grande
+const SAC = [2, 1, 0];         // PV por sacrificar
+const PEN = [3, 2, 1];         // penalización por meeple perdido
+const MAJ = [[2, 1], [3, 1], [4, 2]];
+// Orden de las islas alrededor de la Isla Mayor: se sortea en cada partida (G.ring).
+// RING es solo el orden de la portada y de partidas guardadas antes de este cambio.
+const RING = [1, 5, 2, 6, 3, 4];
+const ringOf = G => (G && Array.isArray(G.ring) && G.ring.length === 6) ? G.ring : RING;
+const DECK0 = [0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 5, 6];
+const SCHED = [6, 11, 15, 18, 20, 21];
+const MEEPLES = 12;
+// Parejas de islas que un barco puede unir: la Isla Mayor con cada periférica, y cada periférica con sus vecinas del anillo.
+function pairsOf(G) {
+  const ring = ringOf(G), s = [];
+  for (let k = 1; k <= 6; k++) s.push([0, k]);
+  for (let i = 0; i < 6; i++) { const a = ring[i], b = ring[(i + 1) % 6]; s.push(a < b ? [a, b] : [b, a]); }
+  return s;
+}
+
+function rid(n) { const a = 'abcdefghjkmnpqrstuvwxyz23456789'; let s = ''; for (let i = 0; i < n; i++) s += a[Math.floor(Math.random() * a.length)]; return s; }
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const sameEdge = (e, a, b) => (e[0] === a && e[1] === b) || (e[0] === b && e[1] === a);
+const hasEdge = (E, a, b) => E.some(e => sameEdge(e, a, b));
+const isPair = (G, a, b) => pairsOf(G).some(p => sameEdge(p, a, b));
+function connected(E) {
+  const seen = new Set([0]), st = [0];
+  while (st.length) { const x = st.pop(); for (const [a, b] of E) { const y = a === x ? b : b === x ? a : -1; if (y >= 0 && !seen.has(y)) { seen.add(y); st.push(y); } } }
+  return seen.size === 7;
+}
+// Islas activas a un tramo de barco; los volcanes se cruzan.
+function reach(G, from, xv = -1) {
+  const vo = i => !!G.vo[i] || i === xv;
+  const seen = new Set([from]), out = [], st = [from];
+  while (st.length) {
+    const x = st.pop();
+    for (const [a, b] of G.e) {
+      const y = a === x ? b : b === x ? a : -1;
+      if (y < 0 || seen.has(y)) continue;
+      seen.add(y);
+      if (vo(y)) st.push(y); else out.push(y);
+    }
+  }
+  return out.sort((a, b) => a - b);
+}
+const isErRound = r => SCHED.includes(r) || r > 21;
+function nextEr(r) { for (let x = r; x < r + 30; x++) if (isErRound(x)) return x; return r; }
+function addLog(G, ...e) { G.log.push(e); if (G.log.length > 60) G.log.shift(); }
+function legalPicks(G, s) { const p = G.P[s]; return [0, 1, 2, 3, 4].filter(c => !p.ex[c] && !(c === 4 && p.lp === 4)); }
+function rescueCost(hasChief, n) { let c = 0, step = hasChief ? 2 : 1; for (let k = 0; k < n; k++) c += step + k; return c; }
+
+function newGame(list) {
+  const n = list.length;
+  const G = {
+    v: 2, gid: rid(6), n, r: 1, st: 0, ph: 'select', q: 0, er: 0, ring: shuffle([1, 2, 3, 4, 5, 6]),
+    P: list.map(p => ({ nm: p.nm, k: p.k || '', b: p.b ? 1 : 0, R: [2, 2, 2], pv: 0, rs: MEEPLES, ex: [0, 0, 0, 0, 0], lp: -1, pk: -1, h: { maj: 0, sac: 0, pen: 0, set: 0, vol: 0 } })),
+    m: ISL.map(() => Array(n).fill(0)), ch: Array(n).fill(0),
+    e: [1, 2, 3, 4, 5, 6].map(k => [0, k]), pr: Array(7).fill(0), vo: Array(7).fill(0),
+    deck: shuffle(DECK0.slice()), ord: [], t: 0, tu: null, cnt: [0, 0, 0, 0, 0], ev: null, last: null, log: [], fin: null, disc: [],
+  };
+  const d = G.deck, ind = d.slice(0, n), sh = d.slice(n, 2 * n);
+  const spotsOf = s => [ind[s], sh[s], sh[(s - 1 + n) % n]];
+  for (let s = 0; s < n; s++) for (const i of spotsOf(s)) { G.m[i][s]++; G.P[s].rs--; }
+  addLog(G, 'setup', G.P.map((_, s) => spotsOf(s)));
+  G.deck = shuffle(DECK0.slice());
+  addLog(G, 'round', 1, 0);
+  return G;
+}
+
+function actorsOf(G) {
+  if (!G) return [];
+  if (G.ph === 'select') return G.P.map((p, s) => p.pk < 0 ? s : -1).filter(s => s >= 0);
+  if (G.ph === 'resolve') return [G.ord[G.t]];
+  if (G.ph === 'evac') return [G.ev.q[G.ev.k]];
+  return [];
+}
+function initTurn(G) {
+  const s = G.ord[G.t], c = G.P[s].pk;
+  G.tu = { cm: 0, st: 0, mp: c === 1 ? (G.cnt[1] === 1 ? 3 : 2) : 0, bm: 0, pk: null, cc: 0 };
+  G.un = [];
+}
+// Deshacer: copia de lo que puede cambiar en un turno, antes de cada jugada del jugador activo.
+// Se vacía al cambiar de turno y después de mirar cartas con Brujería (ya se ha visto información).
+const snapTurn = G => JSON.stringify({ m: G.m, ch: G.ch, e: G.e, P: G.P, tu: G.tu, log: G.log });
+const canUndo = G => (G.uc !== undefined ? G.uc : (G.un ? G.un.length : 0)) > 0;
+function reveal(G) {
+  G.cnt = [0, 0, 0, 0, 0];
+  G.P.forEach(p => { G.cnt[p.pk]++; });
+  G.P.forEach(p => { p.ex[p.pk] = 1; if (p.pk === 4) p.ex = [0, 0, 0, 0, 0]; p.lp = p.pk; });
+  G.ord = G.P.map((_, i) => (G.st + i) % G.n);
+  G.t = 0; G.ph = 'resolve'; initTurn(G);
+  addLog(G, 'reveal', G.r, G.ord.map(s => [s, G.P[s].pk, G.cnt[G.P[s].pk] > 1 ? 1 : 0]));
+}
+
+function apply(G, s, a) {
+  if (!G || !a || typeof a !== 'object' || typeof a.t !== 'string' || G.ph === 'end') return false;
+  const P = G.P[s];
+  if (!P) return false;
+  if (G.ph === 'select') {
+    if (a.t === 'unpick') { if (P.pk < 0) return false; P.pk = -1; G.q++; return true; }
+    if (a.t !== 'pick' || P.pk >= 0 || !legalPicks(G, s).includes(a.c)) return false;
+    P.pk = a.c; G.q++;
+    if (G.P.every(p => p.pk >= 0)) reveal(G);
+    return true;
+  }
+  if (G.ph === 'evac') { const ok = evac(G, s, a); if (ok) G.q++; return ok; }
+  if (G.ph !== 'resolve' || G.ord[G.t] !== s) return false;
+  if (a.t === 'undo') {
+    if (!G.un || !G.un.length) return false;
+    Object.assign(G, JSON.parse(G.un.pop()));
+    addLog(G, 'undo', s);
+    G.q++;
+    return true;
+  }
+  if (!G.un) G.un = [];
+  const before = a.t !== 'end' ? snapTurn(G) : null;
+  const tu = G.tu, c = P.pk, u = G.cnt[c] === 1, isl = G.ch[s];
+  let ok = false;
+  switch (a.t) {
+    case 'chief': {
+      if (tu.cm || tu.st === 1 || !reach(G, isl).includes(a.to)) return false;
+      G.ch[s] = a.to; tu.cm = 1; ok = true;
+      addLog(G, 'chief', s, a.to);
+      break;
+    }
+    case 'act': if (tu.st !== 0 || c === 1) return false; ok = doAct(G, s, a, c, u); break;
+    case 'mv': {
+      if (c !== 1 || tu.st === 2 || tu.mp <= 0) return false;
+      const f = a.f, to = a.to, nb = reach(G, isl);
+      const okp = (f === isl && nb.includes(to)) || (to === isl && nb.includes(f));
+      if (!okp || G.m[f][s] <= 0) return false;
+      G.m[f][s]--; G.m[to][s]++; tu.mp--; tu.st = 1; ok = true;
+      addLog(G, 'mv', s, f, to);
+      break;
+    }
+    case 'boat': {
+      if (c !== 1 || tu.st === 2 || tu.bm) return false;
+      const r = a.rm, d = a.add;
+      if (!Array.isArray(r) || !Array.isArray(d) || r.length !== 2 || d.length !== 2) return false;
+      if (![...r, ...d].every(x => Number.isInteger(x) && x >= 0 && x < 7)) return false;
+      if (!hasEdge(G.e, r[0], r[1]) || !isPair(G, d[0], d[1])) return false;
+      const E = G.e.filter(e => !sameEdge(e, r[0], r[1]));
+      if (hasEdge(E, d[0], d[1])) return false;
+      E.push(d[0] < d[1] ? [d[0], d[1]] : [d[1], d[0]]);
+      if (!connected(E)) return false;
+      G.e = E; tu.bm = 1; tu.st = 1; ok = true;
+      addLog(G, 'boat', s, r[0], r[1], d[0], d[1]);
+      break;
+    }
+    case 'coco': {
+      // Mover: se puede pagar 1 coco (una sola vez) por 1 punto de movimiento más.
+      if (c !== 1 || tu.st === 2 || tu.cc || P.R[2] < 1) return false;
+      P.R[2]--; tu.mp++; tu.cc = 1; tu.st = 1; ok = true;
+      addLog(G, 'mcoco', s);
+      break;
+    }
+    case 'done': if (c !== 1 || tu.st !== 1) return false; tu.st = 2; ok = true; break;
+    case 'witch': {
+      if (c !== 3 || tu.st !== 1 || !tu.pk) return false;
+      const j = a.top;
+      if (!Number.isInteger(j) || j < 0 || j >= tu.pk.length) return false;
+      const k = tu.pk.length, rest = G.deck.slice(k);
+      G.deck = [tu.pk[j], ...rest, ...tu.pk.filter((_, i) => i !== j)];
+      addLog(G, 'wtop', s, k - 1);
+      tu.pk = null; tu.st = 2; ok = true;
+      break;
+    }
+    case 'end': {
+      if (c === 3 && tu.st === 1) return false;
+      G.t++;
+      if (G.t >= G.n) endRound(G); else initTurn(G);
+      ok = true;
+      break;
+    }
+    default: return false;
+  }
+  if (ok && before && G.ph === 'resolve' && G.ord[G.t] === s) {
+    // Mirar cartas (Brujería) no se puede deshacer: ya se ha visto información oculta.
+    if (c === 3 && (a.t === 'act' || a.t === 'witch')) G.un = [];
+    else { G.un.push(before); if (G.un.length > 12) G.un.shift(); }
+  }
+  if (ok) G.q++;
+  return ok;
+}
+
+function doAct(G, s, a, c, u) {
+  const P = G.P[s], isl = G.ch[s], I = ISL[isl], tu = G.tu;
+  if (c === 0) {
+    // Se puede pagar 1 cerdo (una sola vez) por 1 meeple más; solo se cobra si hay meeple en reserva para él.
+    const base = u ? 2 : 1;
+    if (a.pig && P.R[0] < 1) return false;
+    const pig = a.pig && P.rs > base ? 1 : 0;
+    const k = Math.min(P.rs, base + pig);
+    if (pig) P.R[0]--;
+    if (k > 0) { G.m[isl][s] += k; P.rs -= k; addLog(G, 'col', s, isl, k, pig); }
+    else addLog(G, 'col0', s);
+    tu.st = 2; return true;
+  }
+  if (c === 2) {
+    const g = [0, 0, 0];
+    if (I.sz === 2) {
+      if (u) { g[0] = g[1] = g[2] = 1; }
+      else {
+        const p = a.pick;
+        if (!Array.isArray(p) || p.length !== 2 || !p.every(x => Number.isInteger(x) && x >= 0 && x < 3)) return false;
+        p.forEach(x => g[x]++);
+      }
+    } else if (I.sz === 1) {
+      I.r.forEach(x => g[x]++);
+      if (u) { if (!I.r.includes(a.extra)) return false; g[a.extra]++; }
+    } else g[I.r[0]] = u ? 2 : 1;
+    for (let x = 0; x < 3; x++) P.R[x] += g[x];
+    addLog(G, 'prod', s, isl, g);
+    tu.st = 2; return true;
+  }
+  if (c === 3) {
+    const sh = a.sh === undefined ? 0 : a.sh;
+    if (!Number.isInteger(sh) || sh < 0 || sh > 2 || sh > P.R[1]) return false;
+    if (!G.deck.length) { addLog(G, 'w0', s); tu.st = 2; return true; }
+    P.R[1] -= sh;
+    tu.pk = G.deck.slice(0, (u ? 3 : 2) + sh); tu.st = u ? 1 : 2;
+    addLog(G, 'witch', s, tu.pk.length, sh, u ? 1 : 0);
+    return true;
+  }
+  if (c === 4) {
+    if (G.m[isl][s] <= 0) { addLog(G, 'sac0', s, isl); tu.st = 2; return true; }
+    let pts = SAC[I.sz];
+    if (a.bonus) {
+      if (u) { const pay = a.pay; if ((pay !== 0 && pay !== 2) || P.R[pay] < 1) return false; P.R[pay]--; }
+      else { if (P.R[0] < 1 || P.R[2] < 1) return false; P.R[0]--; P.R[2]--; }
+      pts++;
+    }
+    G.m[isl][s]--; P.rs++; P.pv += pts; P.h.sac += pts;
+    addLog(G, 'sac', s, isl, pts, a.bonus ? 1 : 0);
+    tu.st = 2; return true;
+  }
+  return false;
+}
+
+function endRound(G) {
+  G.tu = null;
+  if (isErRound(G.r)) {
+    if (!G.deck.length) {
+      G.deck = shuffle((G.disc || []).filter(x => !G.vo[x])); G.disc = [];
+      if (!G.deck.length) { addLog(G, 'nodeck'); endGame(G); return; }
+      addLog(G, 'reshuf', G.deck.length);
+    }
+    const i = G.deck.shift();
+    G.disc = G.disc || [];
+    G.pr[i]++;
+    const th = TH[ISL[i].sz], boom = G.pr[i] >= th;
+    G.last = { r: G.r, i, p: G.pr[i], th, b: boom ? 1 : 0 };
+    addLog(G, 'act', G.r, i, G.pr[i], th);
+    if (!boom) G.disc.push(i);
+    if (boom) {
+      G.deck = G.deck.filter(x => x !== i);
+      G.disc = G.disc.filter(x => x !== i);
+      addLog(G, 'boom', i);
+      const q = G.ord.filter(s => G.m[i][s] > 0 || G.ch[s] === i);
+      G.ev = { i, q, k: 0 };
+      if (q.length) { G.ph = 'evac'; return; }
+      finishEr(G); return;
+    }
+  }
+  nextRound(G);
+}
+
+function evac(G, s, a) {
+  if (a.t !== 'evac' || G.ev.q[G.ev.k] !== s) return false;
+  const i = G.ev.i, P = G.P[s], hc = G.ch[s] === i, have = G.m[i][s];
+  if (!Number.isInteger(a.n) || a.n < 0 || a.n > have) return false;
+  let shells = P.R[1], paidChief = 0;
+  if (hc && shells >= 1) { shells--; paidChief = 1; }
+  const cost = rescueCost(hc, a.n);
+  if (cost > shells) return false;
+  let opts = [];
+  if (hc) { opts = reach(G, i, i); if (opts.length && !opts.includes(a.to)) return false; }
+  P.R[1] = shells - cost;
+  if (hc && opts.length) G.ch[s] = a.to;
+  G.m[i][s] -= a.n; P.rs += a.n;
+  const lost = G.m[i][s], pen = lost * PEN[ISL[i].sz];
+  P.pv -= pen; P.h.pen -= pen;
+  addLog(G, 'evac', s, hc ? 1 : 0, paidChief, G.ch[s], a.n, cost, lost, pen);
+  G.ev.k++;
+  if (G.ev.k >= G.ev.q.length) finishEr(G);
+  return true;
+}
+
+function finishEr(G) {
+  const i = G.ev.i;
+  G.vo[i] = 1; G.er++; G.ev = null;
+  scoreMaj(G);
+  if (G.er >= 3) { endGame(G); return; }
+  nextRound(G);
+}
+
+function scoreMaj(G) {
+  const gain = Array(G.n).fill(0);
+  for (let isl = 0; isl < 7; isl++) {
+    if (G.vo[isl]) continue;
+    const cnt = G.P.map((_, s) => G.m[isl][s] + (G.ch[s] === isl ? 1 : 0));
+    const mx = Math.max(...cnt);
+    if (mx <= 0) continue;
+    const [p1, p2] = MAJ[ISL[isl].sz];
+    const top = cnt.map((c, s) => c === mx ? s : -1).filter(s => s >= 0);
+    if (top.length > 1) top.forEach(s => { gain[s] += p2; });
+    else {
+      gain[top[0]] += p1;
+      const rest = cnt.filter(c => c > 0 && c < mx);
+      if (rest.length) { const m2 = Math.max(...rest); cnt.forEach((c, s) => { if (c === m2) gain[s] += p2; }); }
+    }
+  }
+  gain.forEach((g, s) => { G.P[s].pv += g; G.P[s].h.maj += g; });
+  addLog(G, 'maj', gain);
+}
+
+function nextRound(G) {
+  G.r++; G.st = (G.st + 1) % G.n; G.ph = 'select'; G.ord = []; G.t = 0;
+  G.P.forEach(p => { p.pk = -1; });
+  addLog(G, 'round', G.r, G.st);
+}
+
+function endGame(G) {
+  G.ph = 'end'; G.tu = null; G.ev = null;
+  G.P.forEach((p, s) => {
+    const sets = Math.min(...p.R), vol = G.vo.reduce((a, v, i) => a + (v ? G.m[i][s] : 0), 0);
+    p.h.set = sets * 2; p.h.vol = -2 * vol;
+    p.pv += p.h.set + p.h.vol;
+  });
+  const order = G.P.map((p, s) => s).sort((a, b) => (G.P[b].pv - G.P[a].pv) || (sum(G.P[b].R) - sum(G.P[a].R)));
+  const best = order[0], w = order.filter(s => G.P[s].pv === G.P[best].pv && sum(G.P[s].R) === sum(G.P[best].R));
+  G.fin = { order, w };
+  addLog(G, 'end', w, G.P[best].pv);
+}
+const sum = a => a.reduce((x, y) => x + y, 0);
+
+/* ---------- Bots: jugadas sencillas y legales ---------- */
+function pickW(list) { const t = sum(list.map(x => x[1])); let r = Math.random() * t; for (const [v, w] of list) { if ((r -= w) <= 0) return v; } return list[list.length - 1][0]; }
+function botMove(G, s) {
+  const P = G.P[s];
+  if (G.ph === 'select') {
+    const L = legalPicks(G, s);
+    const w = { 0: 3, 1: 1.2, 2: 3, 3: 0.8, 4: L.length <= 2 ? 5 : 0.4 };
+    return { t: 'pick', c: pickW(L.map(c => [c, w[c]])) };
+  }
+  if (G.ph === 'evac') {
+    const i = G.ev.i, hc = G.ch[s] === i;
+    let shells = P.R[1] - (hc && P.R[1] >= 1 ? 1 : 0), n = 0;
+    while (n < G.m[i][s] && rescueCost(hc, n + 1) <= shells && (ISL[i].sz < 2 || n < 1)) n++;
+    const opts = reach(G, i, i);
+    return { t: 'evac', n, to: opts.length ? opts[Math.floor(Math.random() * opts.length)] : 0 };
+  }
+  if (G.ph !== 'resolve') return null;
+  const tu = G.tu, c = P.pk, isl = G.ch[s], I = ISL[isl];
+  if (!tu.cm && tu.st === 0 && Math.random() < 0.45) {
+    const nb = reach(G, isl);
+    if (nb.length) return { t: 'chief', to: nb[Math.floor(Math.random() * nb.length)] };
+  }
+  if (tu.st === 2) return { t: 'end' };
+  if (c === 0) return { t: 'act', pig: P.R[0] > 2 };
+  if (c === 1 && !tu.cc && P.R[2] > 3 && G.m[isl][s] > 2 && Math.random() < 0.5) return { t: 'coco' };
+  if (c === 3 && G.cnt[3] > 1) return { t: 'act', sh: 0 };
+  if (c === 2) return { t: 'act', pick: [Math.floor(Math.random() * 3), Math.floor(Math.random() * 3)], extra: I.r[Math.floor(Math.random() * I.r.length)] };
+  if (c === 3) {
+    if (tu.st === 0) return { t: 'act', sh: P.R[1] > 4 ? 1 : 0 };
+    let best = 0, bv = Infinity;
+    tu.pk.forEach((i, j) => { const v = G.m[i][s] * 10 + (G.ch[s] === i ? 5 : 0) - G.pr[i]; if (v < bv) { bv = v; best = j; } });
+    return { t: 'witch', top: best };
+  }
+  if (c === 4) {
+    const u = G.cnt[4] === 1;
+    if (u && (P.R[2] > 0 || P.R[0] > 0)) return { t: 'act', bonus: true, pay: P.R[2] >= P.R[0] ? 2 : 0 };
+    if (!u && P.R[0] > 0 && P.R[2] > 0) return { t: 'act', bonus: true };
+    return { t: 'act' };
+  }
+  if (c === 1) {
+    const nb = reach(G, isl);
+    if (tu.mp > 0 && nb.length) {
+      if (G.m[isl][s] > 1 && Math.random() < 0.8) return { t: 'mv', f: isl, to: nb[Math.floor(Math.random() * nb.length)] };
+      const back = nb.filter(i => G.m[i][s] > 0);
+      if (back.length && Math.random() < 0.5) return { t: 'mv', f: back[0], to: isl };
+    }
+    return { t: 'end' };
+  }
+  return { t: 'end' };
+}
+function botFallback(G, s) {
+  if (G.ph === 'select') return { t: 'pick', c: legalPicks(G, s)[0] };
+  if (G.ph === 'evac') { const o = reach(G, G.ev.i, G.ev.i); return { t: 'evac', n: 0, to: o[0] }; }
+  if (G.ph === 'resolve') {
+    if (G.tu.st === 1 && G.P[s].pk === 3) return { t: 'witch', top: 0 };
+    return { t: 'end' };
+  }
+  return null;
+}
+/*ENGINE-END*/
+
+/* ---------- Utilidades de página ---------- */
+const lsGet = k => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } };
+const lsSet = (k, v) => { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* sin almacenamiento */ } };
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const cleanName = s => String(s || '').replace(/[\u0000-\u001f\u007f-\u009f​-‏‪-‮⁠-⁤﻿]/g, '').trim().slice(0, 16);
+const pc = s => `var(--p${s})`;
+const resIcon = (x, size = 16) => `<svg width="${size}" height="${size}" aria-hidden="true"><use href="#r${x}"/></svg>`;
+const ONLINE_KEY = 'islas.online.v1', TOKEN_KEY = 'islas.tk', NAME_KEY = 'islas.nm', LOCAL_KEY = 'islas.local.v1', LANG_KEY = 'islas.lang';
+
+/* ---------- Idioma ---------- */
+let LANG = (() => {
+  const s = lsGet(LANG_KEY);
+  if (s === 'es' || s === 'en') return s;
+  return /^es\b/i.test(navigator.language || '') ? 'es' : 'en';
+})();
+const tr = (es, en) => LANG === 'en' ? en : es;
+const TXT = {
+  es: {
+    ch: ['Colonizar', 'Mover', 'Producir', 'Brujería', 'Sacrificar'],
+    chAbbr: ['Col', 'Mov', 'Pro', 'Bru', 'Sac'],
+    chU: ['2 meeples en la isla del jefe (+1 pagando 1 cerdo)', '3 puntos (+1 pagando 1 coco) + recolocar 1 barco', '3 recursos según la isla', 'Mira 3 cartas; 1 arriba, resto abajo', 'Retira 1 meeple; bonus pagando coco o cerdo'],
+    chS: ['1 meeple en la isla del jefe (+1 pagando 1 cerdo)', '2 puntos (+1 pagando 1 coco) + recolocar 1 barco', '2 recursos según la isla', 'Mira 2 cartas sin cambiar el orden', 'Retira 1 meeple; bonus pagando coco y cerdo'],
+    res: ['Cerdo', 'Concha', 'Coco'], resPl: ['cerdos', 'conchas', 'cocos'],
+    sz: ['Pequeña', 'Mediana', 'Grande'],
+    isl: ['Isla Mayor', 'Ensenada', 'Arrecife', 'Palmar', 'Jabalí', 'Nácar', 'Cocotal'],
+    bots: ['Gaviota', 'Tortuga', 'Delfín', 'Pelícano', 'Cangrejo'],
+    and: ' y ',
+  },
+  en: {
+    ch: ['Colonize', 'Move', 'Produce', 'Witchcraft', 'Sacrifice'],
+    chAbbr: ['Col', 'Mov', 'Pro', 'Wit', 'Sac'],
+    chU: ['2 meeples on the chief’s island (+1 by paying 1 pig)', '3 points (+1 by paying 1 coconut) + relocate 1 boat', '3 resources from the island', 'Look at 3 cards; 1 on top, rest to the bottom', 'Remove 1 meeple; bonus by paying a coconut or a pig'],
+    chS: ['1 meeple on the chief’s island (+1 by paying 1 pig)', '2 points (+1 by paying 1 coconut) + relocate 1 boat', '2 resources from the island', 'Look at 2 cards without changing the order', 'Remove 1 meeple; bonus by paying a coconut and a pig'],
+    res: ['Pig', 'Shell', 'Coconut'], resPl: ['pigs', 'shells', 'coconuts'],
+    sz: ['Small', 'Medium', 'Large'],
+    isl: ['Great Island', 'Cove', 'Reef', 'Palm Grove', 'Boar Key', 'Pearl Key', 'Coconut Key'],
+    bots: ['Gull', 'Turtle', 'Dolphin', 'Pelican', 'Crab'],
+    and: ' and ',
+  },
+};
+const L = () => TXT[LANG];
+const chN = c => L().ch[c] || '?';
+const islN = i => L().isl[i] || '?';
+const szN = z => L().sz[z] || '';
+const resN = (x, pl) => pl ? L().resPl[x] : L().res[x].toLowerCase();
+const resAmt = (x, n) => `${n} ${resN(x, n !== 1)}`;
+const plural = (n, es1, esN, en1, enN) => `${n} ${n === 1 ? tr(es1, en1) : tr(esN, enN)}`;
+const meeples = n => `${n} meeple${n === 1 ? '' : 's'}`;
+const shellsTxt = n => plural(n, 'concha', 'conchas', 'shell', 'shells');
+const joinAnd = a => a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + L().and + a[a.length - 1];
+function setLang(l) {
+  if (l !== 'es' && l !== 'en') return;
+  LANG = l; lsSet(LANG_KEY, l);
+  document.documentElement.lang = l;
+  render();
+}
+document.documentElement.lang = LANG;
+function langSel() {
+  return `<div class="langsel" role="group" aria-label="${tr('Idioma', 'Language')}">${['es', 'en'].map(l => `<button type="button" data-action="lang" data-l="${l}" aria-pressed="${LANG === l}" lang="${l}" title="${l === 'es' ? 'Español' : 'English'}">${l.toUpperCase()}</button>`).join('')}</div>`;
+}
+
+// Bitácora: cada suceso es [clave, ...datos]; se traduce al dibujarlo.
+function fmtLog(e) {
+  if (typeof e === 'string') return esc(e);
+  if (!Array.isArray(e) || typeof e[0] !== 'string') return '';
+  const [k, ...a] = e;
+  const P = s => `<b>${esc(G.P[s] ? G.P[s].nm : '?')}</b>`, I = i => esc(islN(i));
+  const resList = g => joinAnd(g.map((v, x) => v ? resAmt(x, v) : '').filter(Boolean));
+  try {
+    switch (k) {
+      case 'setup': return tr('Preparación: ', 'Setup: ') + a[0].map((sp, s) => `${P(s)} ${tr('en', 'on')} ${sp.map(I).join(', ')}`).join(' · ') + '.';
+      case 'round': return tr(`Ronda ${a[0]}. Empieza ${P(a[1])}.`, `Round ${a[0]}. ${P(a[1])} goes first.`);
+      case 'reveal': return tr(`Ronda ${a[0]}, personajes: `, `Round ${a[0]}, characters: `) + a[1].map(([s, c, sh]) => `${P(s)} ${esc(chN(c))}${sh ? tr(' (compartido)', ' (shared)') : ''}`).join(' · ') + '.';
+      case 'undo': return tr(`${P(a[0])} deshace su última jugada.`, `${P(a[0])} undoes their last move.`);
+      case 'chief': return tr(`${P(a[0])} lleva su jefe a ${I(a[1])}.`, `${P(a[0])} moves their chief to ${I(a[1])}.`);
+      case 'mv': return tr(`${P(a[0])} mueve un meeple de ${I(a[1])} a ${I(a[2])}.`, `${P(a[0])} moves a meeple from ${I(a[1])} to ${I(a[2])}.`);
+      case 'boat': return tr(`${P(a[0])} recoloca un barco: ${I(a[1])}–${I(a[2])} pasa a ${I(a[3])}–${I(a[4])}.`, `${P(a[0])} relocates a boat: ${I(a[1])}–${I(a[2])} becomes ${I(a[3])}–${I(a[4])}.`);
+      case 'wtop': return tr(`${P(a[0])} deja una carta arriba del mazo y pone ${a[1]} debajo.`, `${P(a[0])} keeps one card on top of the deck and puts ${a[1]} at the bottom.`);
+      case 'col': return tr(`${P(a[0])} coloniza ${I(a[1])} con ${meeples(a[2])}${a[3] ? ' (paga 1 cerdo)' : ''}.`, `${P(a[0])} colonizes ${I(a[1])} with ${meeples(a[2])}${a[3] ? ' (pays 1 pig)' : ''}.`);
+      case 'mcoco': return tr(`${P(a[0])} paga 1 coco por 1 punto de movimiento más.`, `${P(a[0])} pays 1 coconut for 1 extra movement point.`);
+      case 'col0': return tr(`${P(a[0])} no tiene meeples en reserva; Colonizar no se ejecuta.`, `${P(a[0])} has no meeples in reserve; Colonize has no effect.`);
+      case 'prod': return tr(`${P(a[0])} produce en ${I(a[1])}: `, `${P(a[0])} produces on ${I(a[1])}: `) + resList(a[2]) + '.';
+      case 'w0': return tr(`${P(a[0])}: el mazo de erupciones está vacío; Brujería no se ejecuta.`, `${P(a[0])}: the eruption deck is empty; Witchcraft has no effect.`);
+      case 'witch': return tr(`${P(a[0])} usa Brujería${a[3] ? '' : ' compartida'} y mira ${a[1]} cartas${a[2] ? ` (gasta ${shellsTxt(a[2])})` : ''}${a[3] ? '' : '; no puede cambiar el orden'}.`,
+        `${P(a[0])} uses ${a[3] ? '' : 'shared '}Witchcraft and looks at ${a[1]} cards${a[2] ? ` (spends ${shellsTxt(a[2])})` : ''}${a[3] ? '' : '; the order cannot be changed'}.`);
+      case 'sac0': return tr(`${P(a[0])} no tiene meeples en ${I(a[1])}; Sacrificar no se ejecuta (recupera igualmente sus personajes).`, `${P(a[0])} has no meeples on ${I(a[1])}; Sacrifice has no effect (their characters are still recovered).`);
+      case 'sac': return tr(`${P(a[0])} sacrifica un meeple en ${I(a[1])}: +${a[2]} PV${a[3] ? ' (con bonus)' : ''}.`, `${P(a[0])} sacrifices a meeple on ${I(a[1])}: +${a[2]} VP${a[3] ? ' (with bonus)' : ''}.`);
+      case 'nodeck': return tr('Activación de erupción sin cartas que rebarajar: la partida termina.', 'Eruption check with no cards left to reshuffle: the game ends.');
+      case 'reshuf': return tr(`El mazo de erupciones se ha agotado: se rebarajan ${a[0]} cartas reveladas.`, `The eruption deck ran out: ${a[0]} revealed cards are reshuffled.`);
+      case 'act': return tr(`Activación de erupción (ronda ${a[0]}): carta de ${I(a[1])}, presión ${a[2]}/${a[3]}.`, `Eruption check (round ${a[0]}): ${I(a[1])} card, pressure ${a[2]}/${a[3]}.`);
+      case 'boom': return tr(`¡${I(a[0])} entra en erupción!`, `${I(a[0])} erupts!`);
+      case 'evac': {
+        const [s, hc, paid, to, n, cost, lost, pen] = a, bits = [];
+        if (hc) bits.push(tr(`salva a su jefe${paid ? ' (1 concha)' : ' (sin conchas)'} hacia ${I(to)}`, `saves their chief${paid ? ' (1 shell)' : ' (no shells)'} to ${I(to)}`));
+        if (n) bits.push(tr(`rescata ${meeples(n)} (${shellsTxt(cost)})`, `rescues ${meeples(n)} (${shellsTxt(cost)})`));
+        if (lost) bits.push(tr(`pierde ${lost} (−${pen} PV)`, `loses ${lost} (−${pen} VP)`));
+        return `${P(s)} ${bits.join(', ') || tr('no tenía nada que salvar', 'had nothing to save')}.`;
+      }
+      case 'maj': return tr('Mayorías en las islas activas: ', 'Majorities on active islands: ') + a[0].map((g, s) => `${P(s)} +${g}`).join(' · ') + '.';
+      case 'end': return tr(`Fin de la partida. ${a[0].length > 1 ? 'Victoria compartida: ' : 'Gana '}`, `Game over. ${a[0].length > 1 ? 'Shared victory: ' : 'Winner: '}`) + joinAnd(a[0].map(P)) + tr(` con ${a[1]} PV.`, ` with ${a[1]} VP.`);
+    }
+  } catch (err) { /* suceso mal formado */ }
+  return '';
+}
+
+let G = null;       // estado de la partida (anfitrión: autoridad; invitado: copia)
+let LOCAL = false;  // partida en solitario contra bots
+const ui = { err: '', pending: null, joinCode: '', soloN: 4, prod: [], extra: -1, sh: 0, bonus: false, pay: 2, evN: 0, evTo: -1, rm: '', add: '', lastQ: -1 };
+const ON = { lobby: null, room: null, status: 'pending', role: null, code: null, tk: '', nm: '', gpeers: [], seen: new Set(), n: 0, lastQ: -1, connected: false, roomErr: '', order: [], lob: { n: 4 }, hostLob: null, lastLob: null, lastOpen: null, joinedAt: 0, unsub: [] };
+
+/* ---------- Sala local de pruebas (solo en localhost, nunca en claude.ai) ---------- */
+function mockRoom() {
+  const me = 'p' + rid(8), rooms = {};
+  function make(name) {
+    const bc = new BroadcastChannel('islas-mock-' + name);
+    const others = new Map(); let mine = {}; const subs = new Set(); let snap = [];
+    const rebuild = () => { snap = [{ peer: me, isMe: true, sameTab: true, kind: 'viewer', guest: false, by: null, presence: mine, updatedAt: Date.now() }, ...others.values()]; subs.forEach(f => f({ peers: snap, joined: [], left: [], updated: [] })); };
+    bc.onmessage = e => {
+      const d = e.data;
+      if (d.t === 'p') { others.set(d.id, { peer: d.id, isMe: false, sameTab: false, kind: 'viewer', guest: false, by: null, presence: d.p, updatedAt: Date.now(), seen: Date.now() }); rebuild(); }
+      else if (d.t === 'bye') { others.delete(d.id); rebuild(); }
+      else if (d.t === 'hello') bc.postMessage({ t: 'p', id: me, p: mine });
+    };
+    const iv = setInterval(() => { bc.postMessage({ t: 'p', id: me, p: mine }); const now = Date.now(); let ch = false; for (const [k, v] of others) if (now - v.seen > 5000) { others.delete(k); ch = true; } if (ch) rebuild(); }, 1500);
+    bc.postMessage({ t: 'hello' });
+    addEventListener('beforeunload', () => bc.postMessage({ t: 'bye', id: me }));
+    rebuild();
+    return {
+      name,
+      presence(p) { mine = { ...mine }; for (const k in p) { if (p[k] === null) delete mine[k]; else mine[k] = JSON.parse(JSON.stringify(p[k])); } bc.postMessage({ t: 'p', id: me, p: mine }); rebuild(); return Promise.resolve(); },
+      peers: () => snap,
+      onPeers(f) { subs.add(f); setTimeout(() => f({ peers: snap, joined: snap, left: [], updated: [] }), 0); return () => subs.delete(f); },
+      connected: () => true,
+      onConnection(f) { setTimeout(() => f(true), 0); return () => {}; },
+      leave() { clearInterval(iv); bc.postMessage({ t: 'bye', id: me }); bc.close(); delete rooms[name]; return Promise.resolve(); },
+      join(n) { if (!rooms[n]) rooms[n] = make(n); return Promise.resolve(rooms[n]); },
+    };
+  }
+  return make('lobby');
+}
+/* ---------- Conexión por Supabase Realtime (fuera de claude.ai: GitHub Pages, etc.) ----------
+   Imita la parte de la sala de claude.ai que usa el juego: cada página publica su estado ("presence")
+   y todos reciben el de los demás. No se usa ninguna tabla ni base de datos. */
+const SUPA = {
+  url: 'https://vjphqqtoigpjncmsdudq.supabase.co',
+  key: 'sb_publishable_hUInzKity39UFsFwsFqmSw_HR3HMLE4',
+};
+function supaRoom() {
+  const sb = window.supabase.createClient(SUPA.url, SUPA.key, { auth: { persistSession: false }, realtime: { params: { eventsPerSecond: 20 }, worker: true, logger: /[?&]debug/.test(location.search) ? (k, m, d) => { if (/close|error|leave|reply/i.test(k + m)) console.info('[rt]', k, m, JSON.stringify(d || '').slice(0, 300)); } : undefined } });
+  const me = 'p' + rid(10), rooms = {}, closing = {};
+  // Cerrar un canal y no abrir otro con el mismo nombre hasta que el cierre haya terminado:
+  // si no, la respuesta de cierre del viejo tumba al nuevo.
+  const closeCh = (name, c) => {
+    const p = (closing[name] || Promise.resolve())
+      .then(() => sb.removeChannel(c).catch(() => {}))
+      .then(() => new Promise(r => setTimeout(r, 400)));
+    closing[name] = p;
+    return p;
+  };
+  function make(name) {
+    // La presencia lleva solo datos pequeños (nombre, jugada). El estado de la partida ("g") va por
+    // difusión (broadcast), que Supabase limita mucho menos, y se reenvía cada pocos segundos para quien llegue tarde.
+    let ch = null, mine = {}, myG = null, sentSig = '', snap = [], conn = false, tmr = null, gtmr = null, dead = false, retry = null, tries = 0;
+    const extra = {}, fast = {};
+    const subs = new Set(), csubs = new Set();
+    const sendG = () => { gtmr = null; if (conn && !dead && ch) ch.send({ type: 'broadcast', event: 'g', payload: { from: me, g: myG } }).catch(() => {}); };
+    const queueG = (ms = 80) => { if (!gtmr) gtmr = setTimeout(sendG, ms); };
+    // Jugadas ("act"/"n"): nunca van en la presencia (Supabase limita sus cambios); se difunden
+    // y se reenvían durante unos segundos por si alguna se pierde. El anfitrión descarta duplicados.
+    let myAct = null, actAt = 0, lastTrack = 0;
+    const sendAct = () => { if (myAct && conn && !dead && ch) ch.send({ type: 'broadcast', event: 'a', payload: { from: me, act: myAct.act, n: myAct.n } }).catch(() => {}); };
+    const beat = setInterval(() => { if (myG !== null) queueG(0); if (myAct && Date.now() - actAt < 12000) sendAct(); }, 1500);
+    const setConn = c => { if (c !== conn) { conn = c; csubs.forEach(f => f(c)); } };
+    // Abre (o reabre) el canal. Si se cae, se vuelve a abrir uno nuevo al poco tiempo.
+    const open = async () => {
+      await (closing[name] || Promise.resolve());
+      if (dead) return;
+      const mine_ch = sb.channel(name, { config: { presence: { key: me } } });
+      ch = mine_ch;
+      mine_ch.on('system', {}, p => { if (p && p.status !== 'ok') console.info('[islas] sistema', name, JSON.stringify(p)); });
+      mine_ch.on('presence', { event: 'sync' }, () => { if (ch === mine_ch) rebuild(); });
+      mine_ch.on('presence', { event: 'join' }, () => { if (ch === mine_ch && myG !== null) queueG(300); });
+      mine_ch.on('broadcast', { event: 'g' }, ({ payload }) => {
+        if (ch !== mine_ch || !payload || typeof payload.from !== 'string' || payload.from === me) return;
+        extra[payload.from] = payload.g === undefined ? null : payload.g;
+        rebuild();
+      });
+      // Jugadas de los invitados: llegan al momento por difusión; la presencia queda como respaldo.
+      mine_ch.on('broadcast', { event: 'a' }, ({ payload }) => {
+        if (ch !== mine_ch || !payload || typeof payload.from !== 'string' || payload.from === me || typeof payload.n !== 'number') return;
+        const prev = fast[payload.from];
+        if (prev && prev.n >= payload.n) return;
+        fast[payload.from] = { act: payload.act, n: payload.n };
+        rebuild();
+      });
+      mine_ch.subscribe((status, err) => {
+        if (ch !== mine_ch || dead) return;
+        console.info('[islas] canal', name, status, err ? String(err.message || err) : '');
+        if (status === 'SUBSCRIBED') { tries = 0; setConn(true); sentSig = ''; lastTrack = 0; flush(); if (myG !== null) queueG(200); return; }
+        setConn(false);
+        if (!retry) retry = setTimeout(() => { retry = null; if (dead || ch !== mine_ch) return; tries++; ch = null; closeCh(name, mine_ch); open(); }, Math.min(8000, 1000 * (tries + 1)));
+      });
+    };
+    const kick = () => { if (!dead && !conn && !retry && ch) { tries++; const old = ch; ch = null; closeCh(name, old); open(); } };
+    addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') setTimeout(kick, 1500); });
+    addEventListener('online', () => setTimeout(kick, 500));
+    const rebuild = () => {
+      const st = ch ? ch.presenceState() : {}, arr = [];
+      for (const k in st) {
+        if (k === me) continue;
+        const metas = st[k], m = metas && metas[metas.length - 1];
+        if (!m) continue;
+        const { presence_ref, ...p } = m;
+        if (extra[k] != null) p.g = extra[k];
+        const f = fast[k];
+        if (f && !(typeof p.n === 'number' && p.n > f.n)) { p.act = f.act; p.n = f.n; }
+        arr.push({ peer: k, isMe: false, sameTab: false, kind: 'viewer', guest: false, by: null, presence: p, updatedAt: Date.now() });
+      }
+      const self = { ...mine };
+      if (myG !== null) self.g = myG;
+      if (myAct) { self.act = myAct.act; self.n = myAct.n; }
+      arr.unshift({ peer: me, isMe: true, sameTab: true, kind: 'viewer', guest: false, by: null, presence: self, updatedAt: Date.now() });
+      snap = arr;
+      subs.forEach(f => f({ peers: snap, joined: [], left: [], updated: [] }));
+    };
+    const flush = () => {
+      tmr = null;
+      if (!conn || dead || !ch) return;
+      const sig = JSON.stringify(mine);
+      if (sig === sentSig) return;
+      sentSig = sig; lastTrack = Date.now();
+      ch.track(mine).catch(() => { sentSig = ''; });
+    };
+    const queueTrack = () => { if (!tmr) tmr = setTimeout(flush, Math.max(60, lastTrack + 1500 - Date.now())); };
+    open();
+    rebuild();
+    return {
+      name,
+      presence(p) {
+        mine = { ...mine };
+        let gChanged = false;
+        let actChanged = false;
+        for (const k in p) {
+          if (k === 'g') { myG = p.g == null ? null : JSON.parse(JSON.stringify(p.g)); gChanged = true; continue; }
+          if (k === 'act' || k === 'n') continue;
+          if (p[k] === null) delete mine[k]; else mine[k] = JSON.parse(JSON.stringify(p[k]));
+        }
+        if ('act' in p) {
+          if (p.act && typeof p.n === 'number') { myAct = { act: JSON.parse(JSON.stringify(p.act)), n: p.n }; actAt = Date.now(); actChanged = true; }
+          else myAct = null;
+        }
+        mine.hg = myG !== null ? 1 : null;
+        if (mine.hg === null) delete mine.hg;
+        rebuild();
+        if (gChanged) queueG();
+        if (actChanged) sendAct();
+        queueTrack();
+        return Promise.resolve();
+      },
+      peers: () => snap,
+      onPeers(f) { subs.add(f); setTimeout(() => f({ peers: snap, joined: snap, left: [], updated: [] }), 0); return () => subs.delete(f); },
+      connected: () => conn,
+      onConnection(f) { csubs.add(f); setTimeout(() => f(conn), 0); return () => csubs.delete(f); },
+      leave() { dead = true; clearTimeout(retry); clearInterval(beat); delete rooms[name]; const old = ch; ch = null; return old ? closeCh(name, old).then(() => {}) : Promise.resolve(); },
+      join(n) { if (!rooms[n]) rooms[n] = make(n); return Promise.resolve(rooms[n]); },
+    };
+  }
+  return make('islas-lobby');
+}
+
+async function getRoom() {
+  // Dentro de claude.ai: la sala de Claude. Fuera (GitHub Pages, etc.): Supabase.
+  if (window.claude && typeof window.claude.use === 'function') { try { return await window.claude.use('room'); } catch (e) { return null; } }
+  if (SUPA.url && SUPA.key && window.supabase && typeof window.supabase.createClient === 'function') { try { return supaRoom(); } catch (e) { console.error(e); return null; } }
+  if (location.protocol === 'http:' && /^(localhost|127\.0\.0\.1)$/.test(location.hostname) && typeof BroadcastChannel === 'function') return mockRoom();
+  return null;
+}
+
+/* ---------- Red: el anfitrión publica la partida, los invitados publican su jugada ---------- */
+function mySeat() {
+  if (!G) return -1;
+  if (LOCAL) return 0;
+  return G.P.findIndex(p => !p.b && p.k && p.k === ON.tk);
+}
+const isHost = () => LOCAL || ON.role === 'host';
+const stateKey = g => g.ph === 'select' ? `${g.gid}:s${g.r}` : `${g.gid}:${g.q}`;
+const peerKey = p => (p.presence && typeof p.presence.tk === 'string' && p.presence.tk.length >= 8 ? p.presence.tk.slice(0, 40) : null);
+
+function encodeG() {
+  const w = { ...G, deck: undefined, dl: G.deck.length, online: undefined, un: undefined, uc: G.un ? G.un.length : 0 };
+  w.P = G.P.map(p => ({ ...p, pk: G.ph === 'select' ? (p.pk >= 0 ? 9 : -1) : p.pk }));
+  let lg = 10;
+  w.log = G.log.slice(-lg);
+  while (lg > 1 && new TextEncoder().encode(JSON.stringify(w)).length > 3300) { lg--; w.log = G.log.slice(-lg); }
+  return JSON.parse(JSON.stringify(w));
+}
+function decodeG(w) {
+  try {
+    if (!w || typeof w !== 'object' || !Array.isArray(w.P) || w.P.length < 3 || w.P.length > 5) return null;
+    if (!Array.isArray(w.m) || w.m.length !== 7 || !Array.isArray(w.e) || !Array.isArray(w.ch)) return null;
+    if (!['select', 'resolve', 'evac', 'end'].includes(w.ph)) return null;
+    if (!(Array.isArray(w.ring) && w.ring.length === 6 && [1, 2, 3, 4, 5, 6].every(x => w.ring.includes(x)))) delete w.ring;
+    w.P.forEach(p => { p.nm = cleanName(p.nm) || tr('Jugador', 'Player'); });
+    w.log = (Array.isArray(w.log) ? w.log : []).filter(l => typeof l === 'string' || (Array.isArray(l) && typeof l[0] === 'string')).map(l => typeof l === 'string' ? l.slice(0, 400) : l);
+    w.deck = Array(Number(w.dl) || 0).fill(-1);
+    return w;
+  } catch (e) { return null; }
+}
+function setPresence(room, patch) {
+  if (!room) return;
+  room.presence(patch).catch(e => { ON.roomErr = (e && e.code) || 'error'; render(); });
+}
+function seatPreview() {
+  const me = { key: ON.tk, nm: ON.nm, me: true };
+  const c = ON.gpeers.filter(p => !p.sameTab && p.presence.gc === ON.code && peerKey(p) && peerKey(p) !== ON.tk)
+    .map(p => ({ key: peerKey(p), nm: cleanName(p.presence.nm) || tr('Jugador', 'Player') }));
+  const by = new Map(c.map(x => [x.key, x]));
+  return [me, ...ON.order.filter(k => by.has(k)).map(k => by.get(k))];
+}
+function publish() {
+  if (!ON.room || ON.role !== 'host') return;
+  if (G) { ON.lastLob = null; setPresence(ON.room, { g: encodeG(), lob: null }); }
+  else {
+    const seats = seatPreview();
+    const lob = { n: ON.lob.n, seats: seats.slice(0, 5).map(s => s.nm), spec: Math.max(0, seats.length - 5) };
+    const sig = JSON.stringify(lob);
+    if (sig === ON.lastLob) return;
+    ON.lastLob = sig;
+    setPresence(ON.room, { g: null, lob });
+  }
+}
+function announce() {
+  if (!ON.lobby) return;
+  const open = ON.role === 'host' && !G ? { code: ON.code, nm: ON.nm, n: seatPreview().length } : null;
+  const sig = JSON.stringify(open);
+  if (sig === ON.lastOpen) return;
+  ON.lastOpen = sig;
+  setPresence(ON.lobby, { open });
+}
+function hostPeer() { return ON.gpeers.find(p => !p.sameTab && p.presence.host === 1 && p.presence.code === ON.code) || null; }
+function saveState() {
+  if (LOCAL) { lsSet(LOCAL_KEY, G); return; }
+  if (!ON.role) { lsSet(ONLINE_KEY, null); return; }
+  lsSet(ONLINE_KEY, { role: ON.role, code: ON.code, nm: ON.nm, G: ON.role === 'host' ? G : null, lob: ON.lob, order: ON.order });
+}
+
+async function enterGame(code, role, saved) {
+  ui.err = '';
+  code = String(code || '').toLowerCase().trim();
+  if (!ON.lobby) { ui.err = tr('El modo online no está disponible en esta vista.', 'Online play is not available here.'); render(); return; }
+  if (!/^[a-z0-9]{4}$/.test(code)) { ui.err = tr('El código tiene 4 letras o números.', 'The code has 4 letters or digits.'); render(); return; }
+  ON.nm = cleanName(ON.nm) || tr('Jugador', 'Player');
+  lsSet(NAME_KEY, ON.nm);
+  // Sala propia por código; si la plataforma no la permite a este jugador, se usa la sala común
+  // (como BlindSpots): todo va filtrado por código, así que funciona igual.
+  leaveRoomOnly();
+  let room = null;
+  if (typeof ON.lobby.join === 'function') {
+    try { room = await Promise.race([ON.lobby.join('islas-' + code), new Promise((_, rej) => setTimeout(() => rej({ code: 'timeout' }), 8000))]); }
+    catch (e) { room = null; console.warn('Sala por código no disponible, uso la sala común:', e && e.code); }
+  }
+  if (!room) room = ON.lobby;
+  G = null; LOCAL = false;
+  Object.assign(ON, { room, code, role, seen: new Set(), lastQ: -1, lastLob: null, joinedAt: Date.now(), hostLob: null, gpeers: [], n: Date.now() });
+  ON.unsub = [
+    room.onPeers(() => onRoomPeers(), e => { ON.roomErr = (e && e.code) || 'error'; render(); }),
+    room.onConnection(c => { ON.connected = c; render(); }, () => {}),
+  ];
+  if (role === 'host') {
+    if (saved) { ON.lob = saved.lob || ON.lob; ON.order = saved.order || []; if (saved.G && Array.isArray(saved.G.P)) G = saved.G; }
+    else ON.order = [];
+    setPresence(room, { nm: ON.nm, tk: ON.tk, host: 1, code, gc: null, act: null, n: null });
+    publish();
+  } else {
+    setPresence(room, { nm: ON.nm, tk: ON.tk, gc: code, host: null, code: null, g: null, lob: null, act: null, n: 0 });
+  }
+  announce(); saveState(); onRoomPeers(); scheduleBots(); render();
+}
+function leaveRoomOnly() {
+  ON.unsub.forEach(f => { try { f(); } catch (e) { /* ya cerrado */ } });
+  ON.unsub = [];
+  if (ON.room && ON.room !== ON.lobby) ON.room.leave().catch(() => {});
+  else if (ON.room) setPresence(ON.room, { host: null, code: null, gc: null, g: null, lob: null, act: null, n: null });
+  ON.room = null;
+}
+function leaveGame() {
+  leaveRoomOnly();
+  Object.assign(ON, { role: null, code: null, gpeers: [], hostLob: null });
+  if (LOCAL) lsSet(LOCAL_KEY, null);
+  G = null; LOCAL = false; ui.pending = null;
+  announce(); saveState(); render();
+}
+
+function onRoomPeers() {
+  if (!ON.role || !ON.room) { render(); return; }
+  ON.gpeers = ON.room.peers().filter(p => p.presence && ((p.presence.host === 1 && p.presence.code === ON.code) || p.presence.gc === ON.code));
+  if (ON.role === 'host') {
+    for (const p of ON.gpeers) { const k = peerKey(p); if (k && !p.sameTab && p.presence.gc === ON.code && !ON.order.includes(k)) ON.order.push(k); }
+    if (!G) { publish(); announce(); render(); return; }
+    let moved = false;
+    for (const p of ON.gpeers) if (!p.sameTab) moved = processAct(p) || moved;
+    if (moved) changed(); else render();
+  } else {
+    const h = hostPeer();
+    if (h) {
+      const pr = h.presence;
+      if (pr.g && typeof pr.g === 'object') {
+        const g = decodeG(JSON.parse(JSON.stringify(pr.g)));
+        if (g && (!G || g.q !== G.q || g.ph !== G.ph || g.gid !== G.gid)) {
+          const prev = G ? stateKey(G) : null;
+          G = g;
+          if (ui.pending && (stateKey(G) !== prev || G.q !== ui.pendingQ)) ui.pending = null;
+          resetTurnUI();
+        }
+      } else if (pr.lob && typeof pr.lob === 'object') { G = null; ON.hostLob = pr.lob; }
+    }
+    render();
+  }
+}
+function processAct(peer) {
+  const pr = peer.presence || {}, a = pr.act;
+  if (!a || typeof a !== 'object' || typeof a.key !== 'string') return false;
+  const key = peerKey(peer);
+  const id = key + ':' + pr.n + ':' + a.key;
+  if (ON.seen.has(id)) return false;
+  ON.seen.add(id);
+  if (a.key !== stateKey(G)) return false;
+  const seat = G.P.findIndex(p => !p.b && p.k === key);
+  if (seat < 0) return false;
+  return apply(G, seat, a.a);
+}
+function sendAct(a) {
+  if (!ON.room) return;
+  ON.n++;
+  ui.pending = stateKey(G);
+  const sent = ui.pending, sentQ = ui.pendingQ = G.q;
+  ON.room.presence({ act: { key: stateKey(G), a }, n: ON.n }).catch(e => { ui.pending = null; ON.roomErr = (e && e.code) || 'error'; render(); });
+  setTimeout(() => { if (ui.pending === sent && G && stateKey(G) === sent && G.q === sentQ) { ui.pending = null; ui.err = tr('El anfitrión no aceptó la jugada. Revisa e inténtalo de nuevo.', 'The host did not accept that move. Check it and try again.'); render(); } }, 6000);
+  render();
+}
+function act(a) {
+  if (!G) return;
+  const s = mySeat();
+  if (s < 0) return;
+  if (isHost()) { if (apply(G, s, a)) { resetTurnUI(); changed(); } else { ui.err = tr('Esa jugada no es válida ahora.', 'That move is not allowed right now.'); render(); } }
+  else sendAct(a);
+}
+function changed() {
+  if (ON.role === 'host') { publish(); announce(); }
+  saveState(); scheduleBots(); render();
+}
+function resetTurnUI() {
+  if (G && G.q === ui.lastQ) return;
+  ui.lastQ = G ? G.q : -1;
+  ui.err = '';
+  if (!G || G.ph !== 'resolve' || G.tu?.st !== 0) { ui.prod = []; ui.extra = -1; ui.sh = 0; ui.bonus = false; ui.pig = false; }
+  if (!G || G.ph !== 'evac') { ui.evN = 0; ui.evTo = -1; }
+  ui.rm = ''; ui.add = '';
+}
+
+let botTimer = null;
+function scheduleBots() {
+  if (botTimer || !G || G.ph === 'end' || !isHost()) return;
+  if (!actorsOf(G).some(s => G.P[s].b)) return;
+  botTimer = setTimeout(() => {
+    botTimer = null;
+    if (!G || !isHost()) return;
+    const s = actorsOf(G).find(x => G.P[x].b);
+    if (s === undefined) return;
+    let a = botMove(G, s);
+    if (!a || !apply(G, s, a)) { const fb = botFallback(G, s); if (!fb || !apply(G, s, fb)) { console.warn('bot sin jugada', s); return; } }
+    resetTurnUI(); changed();
+  }, G.ph === 'select' ? 250 : 700);
+}
+
+function hostStart() {
+  const seats = seatPreview().slice(0, 5);
+  const total = Math.min(5, Math.max(3, ON.lob.n, seats.length));
+  const used = new Set(seats.map(s => s.nm.toLowerCase()));
+  const bots = L().bots.filter(n => !used.has(n.toLowerCase()));
+  const list = seats.map(s => ({ nm: s.nm, k: s.key, b: 0 }));
+  while (list.length < total) list.push({ nm: bots.shift() || `Bot ${list.length + 1}`, k: '', b: 1 });
+  G = newGame(list);
+  resetTurnUI(); changed();
+}
+function startSolo() {
+  leaveRoomOnly();
+  Object.assign(ON, { role: null, code: null });
+  LOCAL = true;
+  const n = Math.min(5, Math.max(3, ui.soloN));
+  const list = [{ nm: cleanName(ON.nm) || tr('Tú', 'You'), k: 'local', b: 0 }];
+  for (let i = 1; i < n; i++) list.push({ nm: L().bots[i - 1], k: '', b: 1 });
+  G = newGame(list);
+  resetTurnUI(); changed();
+}
+
+/* ---------- Mapa ---------- */
+// Posición de cada isla en el mapa según el orden sorteado de la partida.
+function posOf(G) {
+  const p = [[320, 285]];
+  ringOf(G).forEach((isl, i) => { const a = (-90 + 60 * i) * Math.PI / 180; p[isl] = [320 + 205 * Math.cos(a), 285 + 205 * Math.sin(a)]; });
+  return p;
+}
+const RAD = [40, 54, 76];
+function mapSVG(opt = {}) {
+  const tg = new Set(opt.targets || []);
+  const POS = posOf(G);
+  let s = `<svg viewBox="0 0 640 580" role="img" aria-label="${tr('Mapa del archipiélago', 'Map of the archipelago')}">`;
+  s += `<defs><pattern id="waves" width="44" height="22" patternUnits="userSpaceOnUse"><path d="M0 14 q11 -7 22 0 t22 0" fill="none" stroke="var(--sea-2)" stroke-width="2"/></pattern></defs>`;
+  s += `<rect width="640" height="580" fill="var(--sea)"/><rect width="640" height="580" fill="url(#waves)" opacity=".7"/>`;
+  if (opt.preview) {
+    const [a, b] = opt.preview;
+    s += `<line class="boat-line add" x1="${POS[a][0]}" y1="${POS[a][1]}" x2="${POS[b][0]}" y2="${POS[b][1]}"/>`;
+  }
+  for (const [a, b] of G.e) {
+    const [x1, y1] = POS[a], [x2, y2] = POS[b], mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+    const rm = opt.rm && sameEdge(opt.rm, a, b);
+    s += `<line class="boat-line${rm ? ' rm' : ''}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+    s += `<g transform="translate(${mx} ${my})" aria-hidden="true"><path d="M-13 1 L13 1 L8 8 L-8 8 Z" fill="var(--boat)"/><path d="M0 -14 L0 1 M1 -13 L10 -1 L1 -1 Z" stroke="var(--boat)" stroke-width="1.6" fill="var(--surface)"/></g>`;
+  }
+  for (let i = 0; i < 7; i++) {
+    const I = ISL[i], [x, y] = POS[i], R = RAD[I.sz], vo = G.vo[i];
+    const cls = ['isl'];
+    if (tg.has(i)) cls.push('tgt');
+    if (opt.erupt === i) cls.push('erupt');
+    s += `<g class="${cls.join(' ')}" ${tg.has(i) ? `data-action="isl" data-i="${i}" role="button" tabindex="0" aria-label="${esc(islN(i))}"` : ''}>`;
+    if (vo) {
+      s += `<circle class="shore" cx="${x}" cy="${y}" r="${R}" fill="var(--ash)" stroke="var(--lava)" stroke-width="3"/>`;
+      s += `<path d="M${x - R * .45} ${y - R * .1} L${x} ${y - R * .62} L${x + R * .45} ${y - R * .1} Z" fill="#6b5d55"/><circle cx="${x}" cy="${y - R * .55}" r="${R * .14}" fill="var(--lava)"/>`;
+    } else {
+      s += `<circle cx="${x}" cy="${y}" r="${R + 6}" fill="var(--surface)" opacity=".35"/>`;
+      s += `<circle class="shore" cx="${x}" cy="${y}" r="${R}" fill="var(--land)" stroke="var(--land-edge)" stroke-width="3"/>`;
+      const n = I.r.length, iw = 18;
+      I.r.forEach((r, k) => { s += `<use href="#r${r}" x="${x - (n * iw) / 2 + k * iw}" y="${y - R + 8}" width="17" height="17"/>`; });
+    }
+    // fichas: una por jugador con presencia; corona si el jefe está aquí
+    const items = G.P.map((p, k) => ({ k, m: G.m[i][k], c: G.ch[k] === i })).filter(o => o.m > 0 || o.c);
+    const cols = I.sz === 0 ? 2 : 3, gap = 23;
+    items.forEach((o, j) => {
+      const row = Math.floor(j / cols), col = j % cols, inRow = Math.min(cols, items.length - row * cols);
+      const tx = x - ((inRow - 1) * gap) / 2 + col * gap, ty = y + (I.sz === 0 ? 2 : 8) + row * 24 - (items.length > cols ? 8 : 0);
+      s += `<circle cx="${tx}" cy="${ty}" r="10" fill="${o.m ? pc(o.k) : 'var(--surface)'}" stroke="${o.m ? 'rgba(0,0,0,.35)' : pc(o.k)}" stroke-width="${o.m ? 1 : 3}"/>`;
+      if (o.m) s += `<text class="tok-n" x="${tx}" y="${ty + 4}" text-anchor="middle">${o.m}</text>`;
+      if (o.c) s += `<path d="M${tx - 8} ${ty - 9} L${tx - 8} ${ty - 17} L${tx - 4} ${ty - 13} L${tx} ${ty - 19} L${tx + 4} ${ty - 13} L${tx + 8} ${ty - 17} L${tx + 8} ${ty - 9} Z" fill="${pc(o.k)}" stroke="var(--ink)" stroke-width="1.3" stroke-linejoin="round"/>`;
+    });
+    s += `<text class="nm" x="${x}" y="${y + R + 18}" text-anchor="middle">${esc(islN(i))}</text>`;
+    const th = TH[I.sz];
+    if (vo) s += `<text class="kind" x="${x}" y="${y + R + 32}" text-anchor="middle">${tr('volcán', 'volcano')}</text>`;
+    else {
+      s += `<text class="kind" x="${x - th * 6 - 4}" y="${y + R + 32}" text-anchor="end">${szN(I.sz)}</text>`;
+      for (let k = 0; k < th; k++) s += `<circle cx="${x - th * 6 + 6 + k * 12}" cy="${y + R + 28}" r="4.5" fill="${k < G.pr[i] ? 'var(--lava)' : 'var(--surface)'}" stroke="var(--lava)" stroke-width="1.5"/>`;
+    }
+    s += `</g>`;
+  }
+  s += `</svg>`;
+  return s;
+}
+function heroSVG() {
+  // Vista previa decorativa del archipiélago en la portada
+  const save = G;
+  G = { e: [1, 2, 3, 4, 5, 6].map(k => [0, k]), vo: [0, 0, 0, 0, 0, 0, 0], pr: [0, 1, 0, 0, 0, 0, 0], P: [0, 1, 2, 3].map(k => ({})), m: [[2, 1, 1, 0], [1, 0, 2, 0], [0, 2, 0, 1], [0, 0, 1, 2], [1, 0, 0, 0], [0, 0, 0, 1], [0, 1, 0, 0]], ch: [0, 0, 2, 3] };
+  const out = mapSVG();
+  G = save;
+  return out;
+}
+
+/* ---------- Pantallas ---------- */
+function connLine() {
+  if (!ON.lobby) return '';
+  const room = ON.room || ON.lobby;
+  const others = room.peers().filter(p => !p.sameTab && p.kind === 'viewer').length;
+  const st = ON.roomErr ? tr(`error de conexión (${esc(ON.roomErr)})`, `connection error (${esc(ON.roomErr)})`) : (ON.connected || !ON.room) ? tr('conectado', 'connected') : tr('conectando…', 'connecting…');
+  const who = others === 0 ? tr('no hay nadie más aquí', 'nobody else is here') : others === 1 ? tr('1 persona más aquí', '1 other person here') : tr(`${others} personas más aquí`, `${others} other people here`);
+  return `<p class="note">${tr('Conexión', 'Connection')}: ${st} · ${who}.</p>`;
+}
+function homeHTML() {
+  const opens = ON.lobby ? ON.lobby.peers().filter(p => !p.sameTab && p.presence && p.presence.open && /^[a-z0-9]{4}$/.test(p.presence.open.code)) : [];
+  const online = !!ON.lobby;
+  return `
+  <div class="homebar">${langSel()}</div>
+  <section class="hero">
+    <div>
+      <h1>ISLAS</h1>
+      <p class="lede">${tr('Pueblos, recursos, barcos y volcanes. Controla las islas antes de que el archipiélago estalle.', 'Villages, resources, boats and volcanoes. Control the islands before the archipelago blows.')}</p>
+      <p class="facts">${tr('3–5 jugadores · cada uno desde su casa · unos 30–45 minutos', '3–5 players · each from their own home · about 30–45 minutes')}</p>
+    </div>
+    <div class="mapwrap" aria-hidden="true">${heroSVG()}</div>
+  </section>
+  <div class="cards">
+    <div class="card">
+      <h2>${tr('Tu nombre', 'Your name')}</h2>
+      <input type="text" id="nm" maxlength="16" placeholder="${tr('Cómo te verán los demás', 'How others will see you')}" value="${esc(ON.nm)}" autocomplete="nickname">
+      <p class="note">${tr('Las plazas libres se rellenan con bots.', 'Empty seats are filled with bots.')}</p>
+    </div>
+    <div class="card">
+      <h2>${tr('Crear partida online', 'Host an online game')}</h2>
+      <p class="muted">${tr('Abres una mesa y compartes un código de 4 letras con tus amigos.', 'Open a table and share a 4-letter code with your friends.')}</p>
+      <div class="row"><button class="btn primary" data-action="create" ${online ? '' : 'disabled'}>${tr('Crear mesa', 'Create table')}</button></div>
+      ${online ? '' : `<p class="note">${tr('No se puede conectar desde aquí. Revisa tu conexión a internet y recarga la página; si estás en una red de empresa o con VPN, prueba con otra red.', 'Can’t connect from here. Check your internet connection and reload the page; on a work network or VPN, try another network.')}</p>`}
+    </div>
+    <div class="card">
+      <h2>${tr('Unirse a una mesa', 'Join a table')}</h2>
+      <div class="row"><input type="text" id="code" maxlength="4" placeholder="${tr('CÓDIGO', 'CODE')}" value="${esc(ui.joinCode.toUpperCase())}" style="width:120px;text-transform:uppercase;letter-spacing:.12em" autocomplete="off">
+      <button class="btn primary" data-action="join" ${online ? '' : 'disabled'}>${tr('Entrar', 'Join')}</button></div>
+      ${opens.length ? `<div class="open-list">${opens.map(p => { const n = Number(p.presence.open.n) || 1; return `<div class="open-item"><span><b>${esc(cleanName(p.presence.open.nm) || tr('Mesa', 'Table'))}</b> · <span class="code">${esc(p.presence.open.code.toUpperCase())}</span> · ${tr(`${n} en la mesa`, `${n} at the table`)}</span><button class="btn small" data-action="join-open" data-code="${esc(p.presence.open.code)}">${tr('Entrar', 'Join')}</button></div>`; }).join('')}</div>` : (online ? `<p class="note">${tr('No hay mesas abiertas ahora mismo.', 'No open tables right now.')}</p>` : '')}
+    </div>
+    <div class="card">
+      <h2>${tr('Practicar contra bots', 'Practice against bots')}</h2>
+      <div class="row">${[3, 4, 5].map(n => `<button class="btn small ${ui.soloN === n ? 'sel' : ''}" data-action="solo-n" data-n="${n}">${tr(`${n} jugadores`, `${n} players`)}</button>`).join('')}</div>
+      <div class="row"><button class="btn" data-action="solo">${tr('Jugar en solitario', 'Play solo')}</button></div>
+    </div>
+  </div>
+  ${ui.err ? `<p class="err" style="margin-top:12px">${esc(ui.err)}</p>` : ''}
+  ${online ? `<div style="margin-top:12px">${connLine()}</div>` : ''}
+  ${rulesHTML()}`;
+}
+function lobbyHTML() {
+  const code = ON.code.toUpperCase();
+  const tableChip = `<span class="chip">${tr('Mesa', 'Table')} ${esc(code)}</span>`;
+  if (ON.role === 'host') {
+    const seats = seatPreview(), nh = Math.min(5, seats.length), total = Math.min(5, Math.max(3, ON.lob.n, nh));
+    return `<div class="top"><span class="logo">ISLAS</span>${tableChip}<span style="flex:1"></span>${langSel()}<button class="btn small ghost" data-action="leave">${tr('Cerrar mesa', 'Close table')}</button></div>
+    <div class="cards">
+      <div class="card"><span class="eyebrow">${tr('Código de la mesa', 'Table code')}</span><div class="bigcode">${esc(code)}</div><p class="muted">${tr('Pásales este código. Tienen que abrir esta misma página, escribir su nombre y pulsar «Entrar».', 'Send them this code. They need to open this same page, type their name and press “Join”.')}</p>${connLine()}</div>
+      <div class="card"><h2>${tr('Jugadores', 'Players')} (${nh}/5)</h2>
+        <div class="seats">${seats.slice(0, 5).map((s, i) => `<div class="seat"><span class="dot" style="background:${pc(i)}"></span><span class="nm">${esc(s.nm)}${s.me ? `<span class="tag">${tr('tú · anfitrión', 'you · host')}</span>` : ''}</span><span></span></div>`).join('')}
+        ${Array.from({ length: total - nh }, (_, i) => `<div class="seat"><span class="dot" style="background:${pc(nh + i)}"></span><span class="nm muted">${esc(L().bots[i])} <span class="tag">bot</span></span><span></span></div>`).join('')}</div>
+        ${seats.length > 5 ? `<p class="note">${tr(`${seats.length - 5} persona(s) mirarán como espectadores.`, `${seats.length - 5} people will watch as spectators.`)}</p>` : ''}
+        <div class="row"><span class="muted">${tr('Jugadores en total:', 'Total players:')}</span>${[3, 4, 5].map(n => `<button class="btn small ${total === n ? 'sel' : ''}" data-action="lob-n" data-n="${n}" ${n < nh ? 'disabled' : ''}>${n}</button>`).join('')}</div>
+        <button class="btn primary" data-action="start">${tr('Empezar partida', 'Start game')}</button>
+      </div>
+    </div>`;
+  }
+  const h = hostPeer(), lob = ON.hostLob;
+  const hostNm = h ? esc(cleanName(h.presence.nm) || tr('el anfitrión', 'the host')) : '';
+  return `<div class="top"><span class="logo">ISLAS</span>${tableChip}<span style="flex:1"></span>${langSel()}<button class="btn small ghost" data-action="leave">${tr('Salir', 'Leave')}</button></div>
+  <div class="cards"><div class="card">
+    ${h ? `<h2>${tr(`Esperando a que ${hostNm} empiece`, `Waiting for ${hostNm} to start`)}</h2>` : `<h2>${tr(`Buscando la mesa ${esc(code)}…`, `Looking for table ${esc(code)}…`)}</h2><p class="muted">${Date.now() - ON.joinedAt > 5000 ? tr('No encuentro esa mesa. Revisa el código o pide al anfitrión que la abra.', 'Can’t find that table. Check the code or ask the host to open it.') : tr('Conectando con el anfitrión.', 'Connecting to the host.')}</p>`}
+    ${lob && Array.isArray(lob.seats) ? `<div class="seats">${lob.seats.map((nm, i) => `<div class="seat"><span class="dot" style="background:${pc(i)}"></span><span class="nm">${esc(cleanName(nm))}${cleanName(nm) === ON.nm ? `<span class="tag">${tr('tú', 'you')}</span>` : ''}</span><span></span></div>`).join('')}</div><p class="note">${tr(`Partida de ${Number(lob.n) || 3} o más jugadores; los huecos serán bots.`, `Game for ${Number(lob.n) || 3} or more players; empty seats will be bots.`)}</p>` : ''}
+    ${connLine()}
+  </div></div>`;
+}
+
+function headerHTML() {
+  const ne = nextEr(G.r);
+  const where = LOCAL ? tr('Solitario', 'Solo') : `${tr('Mesa', 'Table')} ${esc((ON.code || '').toUpperCase())}`;
+  const erTxt = G.ph === 'end' ? tr('Partida terminada', 'Game over') : ne === G.r ? tr('Erupción al final de esta ronda', 'Eruption at the end of this round') : tr(`Próxima erupción: ronda ${ne}`, `Next eruption: round ${ne}`);
+  const chips = [
+    `<span class="chip">${where}</span>`,
+    `<span class="chip num">${tr('Ronda', 'Round')} ${G.r}</span>`,
+    `<span class="chip">${tr('Inicial', 'First player')}: ${esc(G.P[G.st].nm)}</span>`,
+    `<span class="chip num ${G.ph !== 'end' && ne === G.r ? 'hot' : ''}">${erTxt}</span>`,
+    `<span class="chip num">${tr('Volcanes', 'Volcanoes')} ${G.er}/3</span>`,
+    `<span class="chip num">${tr('Mazo', 'Deck')} ${G.dl ?? G.deck.length}</span>`,
+  ];
+  return `<div class="top"><span class="logo">ISLAS</span><div class="chips">${chips.join('')}</div>${langSel()}<button class="btn small ghost" data-action="leave">${LOCAL ? tr('Abandonar', 'Quit') : tr('Salir', 'Leave')}</button></div>`;
+}
+function seatsHTML() {
+  const now = new Set(actorsOf(G)), me = mySeat();
+  return `<div class="seats">${G.P.map((p, s) => {
+    const showPick = G.ph !== 'select' && p.pk >= 0 && p.pk < 5;
+    const shared = showPick && G.cnt[p.pk] > 1;
+    return `<div class="seat ${now.has(s) && G.ph !== 'select' ? 'now' : ''}">
+      <span class="dot" style="background:${pc(s)}"></span>
+      <span class="nm">${esc(p.nm)}${s === me ? `<span class="tag">${tr('tú', 'you')}</span>` : ''}${p.b ? '<span class="tag">bot</span>' : ''}${G.ph === 'select' ? (p.pk >= 0 ? `<span class="tag">${tr('elegido', 'chosen')}</span>` : `<span class="tag">${tr('pensando…', 'thinking…')}</span>`) : ''}</span>
+      <span class="pv num">${p.pv} <small class="muted" style="font-family:var(--font-body);font-size:12px">${tr('PV', 'VP')}</small></span>
+      <div class="det">
+        ${[0, 1, 2].map(x => `<span class="res" title="${L().res[x]}">${resIcon(x)}${p.R[x]}</span>`).join('')}
+        <span title="${tr('Meeples en reserva', 'Meeples in reserve')}">${tr('reserva', 'reserve')} ${p.rs}</span>
+        <span title="${tr('Isla del jefe', 'Chief’s island')}">${tr('jefe', 'chief')}: ${esc(islN(G.ch[s]))}</span>
+        <span class="mini" aria-label="${tr('Personajes', 'Characters')}">${L().chAbbr.map((a, c) => `<span class="${showPick && p.pk === c ? 'p' : p.ex[c] && !(showPick && p.pk === c) ? 'x' : ''}" title="${chN(c)}${p.ex[c] ? tr(' (agotado)', ' (exhausted)') : ''}">${a}</span>`).join('')}</span>
+        ${showPick ? `<span>→ <b style="color:var(--ink)">${chN(p.pk)}</b>${shared ? tr(' (compartido)', ' (shared)') : ''}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function panelHTML() {
+  const me = mySeat(), actors = actorsOf(G);
+  if (G.ph === 'end') return endPanel();
+  if (me < 0) return `<div class="panel"><span class="eyebrow">${tr('Espectador', 'Spectator')}</span><p>${tr('Estás mirando la partida.', 'You are watching the game.')} ${actors.length ? `${tr('Juega', 'Playing')}: ${actors.map(s => esc(G.P[s].nm)).join(', ')}.` : ''}</p></div>`;
+  const pending = ui.pending && ui.pending === stateKey(G);
+  if (pending) return `<div class="panel"><p>${tr('Enviando tu jugada…', 'Sending your move…')}</p></div>`;
+  if (G.ph === 'select') return selectPanel(me);
+  if (G.ph === 'evac') return actors[0] === me ? evacPanel(me) : waitPanel(actors[0], tr(`decide la evacuación de ${esc(islN(G.ev.i))}`, `is deciding the evacuation of ${esc(islN(G.ev.i))}`));
+  if (G.ph === 'resolve') return actors[0] === me ? turnPanel(me) : waitPanel(actors[0], tr(`resuelve ${chN(G.P[actors[0]].pk)}`, `is resolving ${chN(G.P[actors[0]].pk)}`));
+  return '';
+}
+function waitPanel(s, what) {
+  const nm = esc(G.P[s].nm);
+  return `<div class="panel"><span class="eyebrow">${tr(`Turno de ${nm}`, `${nm}’s turn`)}</span><p><span class="dot" style="background:${pc(s)};vertical-align:-2px"></span> ${nm} ${what}${G.P[s].b ? ' (bot)' : ''}.</p>${lastErHTML()}</div>`;
+}
+function lastErHTML() {
+  if (!G.last || G.r - G.last.r > 1) return '';
+  const E = G.last, nm = `<b>${esc(islN(E.i))}</b>`;
+  return `<div class="banner">${tr(`Activación de la ronda ${E.r}: carta de ${nm}, presión ${E.p}/${E.th}.`, `Round ${E.r} eruption check: ${nm} card, pressure ${E.p}/${E.th}.`)} ${E.b ? `<b>${tr('¡Entró en erupción!', 'It erupted!')}</b>` : tr('Todavía resiste.', 'It holds for now.')}</div>`;
+}
+function selectPanel(me) {
+  const p = G.P[me], Lp = legalPicks(G, me);
+  if (p.pk >= 0) {
+    const wait = actorsOf(G);
+    const picked = p.pk < 5 ? chN(p.pk) : tr('tu personaje', 'your character');
+    return `<div class="panel"><span class="eyebrow">${tr(`Ronda ${G.r} · selección`, `Round ${G.r} · selection`)}</span><p>${tr(`Has elegido <b>${picked}</b>. Esperando a`, `You chose <b>${picked}</b>. Waiting for`)} ${wait.map(s => esc(G.P[s].nm)).join(', ')}.</p>
+      <div class="row"><button class="btn small" data-action="unpick">↶ ${tr('Cambiar elección', 'Change choice')}</button><span class="note">${tr('Puedes cambiarla hasta que elija el último jugador.', 'You can change it until the last player chooses.')}</span></div>${lastErHTML()}</div>`;
+  }
+  return `<div class="panel turn"><span class="eyebrow">${tr(`Ronda ${G.r} · elige en secreto`, `Round ${G.r} · choose in secret`)}</span>
+    <h3>${tr('¿Qué personaje juegas esta ronda?', 'Which character do you play this round?')}</h3>
+    <div class="chars">${[0, 1, 2, 3, 4].map(c => {
+      const ok = Lp.includes(c), why = p.ex[c] ? tr('Agotado', 'Exhausted') : (c === 4 && p.lp === 4) ? tr('No dos rondas seguidas', 'Not two rounds in a row') : '';
+      return `<button class="char" data-action="pick" data-c="${c}" ${ok ? '' : 'disabled'}><b>${chN(c)}</b><small><b>${tr('Único', 'Alone')}:</b> ${L().chU[c]}</small><small><b>${tr('Compartido', 'Shared')}:</b> ${L().chS[c]}</small>${why ? `<span class="st">${why}</span>` : ''}</button>`;
+    }).join('')}</div>
+    <p class="note">${tr('Si otro jugador elige el mismo personaje, ambos usáis la versión compartida. Sacrificar recupera todos tus personajes agotados.', 'If another player picks the same character, you both use the shared version. Sacrifice recovers all your exhausted characters.')}</p>
+    ${lastErHTML()}</div>`;
+}
+function turnPanel(me) {
+  const P = G.P[me], tu = G.tu, c = P.pk, u = G.cnt[c] === 1, isl = G.ch[me], I = ISL[isl], iN = esc(islN(isl));
+  const nb = reach(G, isl), here = G.m[isl][me];
+  let h = `<div class="panel turn"><span class="eyebrow">${tr('Tu turno', 'Your turn')} · ${chN(c)} ${u ? tr('único', 'alone') : tr('compartido', 'shared')}</span>`;
+  h += `<p>${tr(`Tu jefe está en <b>${iN}</b> (${szN(I.sz).toLowerCase()}). Tienes ${meeples(here)} allí.`, `Your chief is on <b>${iN}</b> (${szN(I.sz).toLowerCase()}). You have ${meeples(here)} there.`)}</p>`;
+  // movimiento del jefe
+  h += `<div class="sub"><b>${tr('Mover el jefe (1 tramo, antes o después de la acción)', 'Move the chief (1 boat hop, before or after the action)')}</b>`;
+  h += tu.cm ? `<p class="muted small">${tr('Ya has movido el jefe este turno.', 'You already moved the chief this turn.')}</p>` : tu.st === 1 ? `<p class="muted small">${tr('Termina la acción en curso para poder mover el jefe.', 'Finish the current action to move the chief.')}</p>` :
+    `<div class="row">${nb.map(i => `<button class="btn small" data-action="chief" data-i="${i}">→ ${esc(islN(i))}</button>`).join('') || `<span class="muted small">${tr('No hay islas alcanzables.', 'No islands within reach.')}</span>`}</div><p class="note">${tr('También puedes pulsar una isla resaltada en el mapa.', 'You can also tap a highlighted island on the map.')}</p>`;
+  h += `</div>`;
+  // acción
+  h += `<div class="sub"><b>${tr('Acción', 'Action')}: ${chN(c)}</b>`;
+  if (tu.st === 2 && c === 3 && tu.pk) h += `<p class="small">${tr('Cartas superiores del mazo, de arriba abajo. Como Brujería es compartida, se quedan en este orden.', 'Top cards of the deck, from the top down. Since Witchcraft is shared, they stay in this order.')}</p><div class="peek">${tu.pk.map((i, j) => `<div class="ecard" style="cursor:default"><span>${j + 1}. ${esc(islN(i))}</span><span class="sz">${szN(ISL[i].sz)} · ${G.pr[i]}/${TH[ISL[i].sz]}</span></div>`).join('')}</div>`;
+  else if (tu.st === 2) h += `<p class="muted small">${tr('Acción resuelta.', 'Action resolved.')}</p>`;
+  else if (c === 0) {
+    const base = u ? 2 : 1, canPig = P.R[0] > 0 && P.rs > base, pig = ui.pig && canPig, k = Math.min(P.rs, base + (pig ? 1 : 0));
+    h += `<p class="small">${tr(`Colocas ${meeples(k)} en ${iN}. Reserva: ${P.rs}.`, `You place ${meeples(k)} on ${iN}. Reserve: ${P.rs}.`)}</p>
+    <div class="row"><button class="btn small ${pig ? 'sel' : ''}" data-action="pig" ${canPig ? '' : 'disabled'} aria-pressed="${pig}">${tr(`+1 meeple pagando ${resIcon(0)} 1 cerdo`, `+1 meeple by paying ${resIcon(0)} 1 pig`)}</button>${!canPig ? `<span class="note">${P.R[0] < 1 ? tr('No tienes cerdos.', 'You have no pigs.') : tr('No te quedan meeples en reserva para el extra.', 'No meeples left in reserve for the extra one.')}</span>` : ''}</div>
+    <div class="row"><button class="btn primary" data-action="colonize">${tr(`Colonizar ${iN}`, `Colonize ${iN}`)}</button></div>`;
+  }
+  else if (c === 2) h += producePanel(P, I, u);
+  else if (c === 3) h += witchPanel(P, u, tu);
+  else if (c === 4) h += sacPanel(P, I, u, isl, me);
+  else if (c === 1) h += moverPanel(me, isl, nb, tu);
+  h += `</div>`;
+  const endOk = !(c === 3 && tu.st === 1);
+  const undoOk = canUndo(G);
+  const hint = tu.st === 0 && !undoOk ? tr('Si no puedes o no quieres actuar, termina el turno.', 'If you can’t or don’t want to act, end your turn.') : c === 3 && tu.pk ? tr('Después de mirar cartas no se puede deshacer.', 'After looking at cards you can’t undo.') : '';
+  h += `<div class="row" style="justify-content:space-between"><span class="note">${hint}</span>
+    <span class="row"><button class="btn" data-action="undo" ${undoOk ? '' : 'disabled'} title="${tr('Deshace tu última jugada de este turno', 'Undo your last move this turn')}">↶ ${tr('Deshacer', 'Undo')}</button>
+    <button class="btn ${tu.st === 2 ? 'primary' : ''}" data-action="end-turn" ${endOk ? '' : 'disabled'}>${tr('Terminar turno', 'End turn')}</button></span></div>`;
+  if (ui.err) h += `<p class="err">${esc(ui.err)}</p>`;
+  h += lastErHTML();
+  return h + `</div>`;
+}
+function producePanel(P, I, u) {
+  if (I.sz === 2 && !u) {
+    return `<p class="small">${tr('Elige 2 recursos (puedes repetir).', 'Choose 2 resources (repeats allowed).')}</p><div class="row">${[0, 1, 2].map(x => `<button class="btn small" data-action="prod-add" data-x="${x}" ${ui.prod.length >= 2 ? 'disabled' : ''}>${resIcon(x)} +1 ${L().res[x]}</button>`).join('')}</div>
+    <div class="row"><span class="small">${tr('Elegidos', 'Chosen')}: ${ui.prod.length ? ui.prod.map(x => resIcon(x)).join(' ') : '—'}</span>${ui.prod.length ? `<button class="btn small ghost" data-action="prod-clear">${tr('Borrar', 'Clear')}</button>` : ''}</div>
+    <div class="row"><button class="btn primary" data-action="produce" ${ui.prod.length === 2 ? '' : 'disabled'}>${tr('Producir', 'Produce')}</button></div>`;
+  }
+  if (I.sz === 1 && u) {
+    return `<p class="small">${tr(`Recibes ${resAmt(I.r[0], 1)} y ${resAmt(I.r[1], 1)}. ¿Cuál recibe el extra?`, `You get ${resAmt(I.r[0], 1)} and ${resAmt(I.r[1], 1)}. Which one gets the extra?`)}</p><div class="row">${I.r.map(x => `<button class="btn small ${ui.extra === x ? 'sel' : ''}" data-action="extra" data-x="${x}">${resIcon(x)} ${L().res[x]}</button>`).join('')}</div>
+    <div class="row"><button class="btn primary" data-action="produce" ${I.r.includes(ui.extra) ? '' : 'disabled'}>${tr('Producir 3', 'Produce 3')}</button></div>`;
+  }
+  const g = I.sz === 2 ? joinAnd([0, 1, 2].map(x => resAmt(x, 1))) : I.sz === 1 ? joinAnd(I.r.map(x => resAmt(x, 1))) : resAmt(I.r[0], u ? 2 : 1);
+  return `<p class="small">${tr(`Recibes ${g}.`, `You get ${g}.`)}</p><div class="row"><button class="btn primary" data-action="produce">${tr('Producir', 'Produce')}</button></div>`;
+}
+function witchPanel(P, u, tu) {
+  if (tu.st === 1 && tu.pk) {
+    return `<p class="small">${tr('Elige la carta que se queda <b>arriba</b> del mazo. Las demás van debajo.', 'Choose the card that stays on <b>top</b> of the deck. The rest go to the bottom.')}</p>
+    <div class="peek">${tu.pk.map((i, j) => `<button class="ecard" data-action="witch-top" data-j="${j}"><span>${esc(islN(i))}</span><span class="sz">${szN(ISL[i].sz)} · ${G.pr[i]}/${TH[ISL[i].sz]}</span></button>`).join('')}</div>`;
+  }
+  const maxSh = Math.min(2, P.R[1]), base = u ? 3 : 2;
+  return `<p class="small">${tr(`Miras ${base} cartas del mazo de erupciones. Cada concha que gastes (máx. 2) te deja mirar una más.`, `You look at ${base} cards from the eruption deck. Each shell you spend (max. 2) lets you see one more.`)} ${u ? tr('Después eliges cuál queda arriba; las demás van debajo.', 'Then you choose which stays on top; the rest go to the bottom.') : tr('Al ser compartida, solo miras: no puedes cambiar el orden.', 'Since it is shared, you only look: you can’t change the order.')}</p>
+  <div class="row">${[0, 1, 2].map(n => `<button class="btn small ${ui.sh === n ? 'sel' : ''}" data-action="sh" data-n="${n}" ${n > maxSh ? 'disabled' : ''}>${shellsTxt(n)}</button>`).join('')}</div>
+  <div class="row"><button class="btn primary" data-action="witch-look" ${(G.dl ?? G.deck.length) ? '' : 'disabled'}>${tr(`Mirar ${base + ui.sh} cartas`, `Look at ${base + ui.sh} cards`)}</button></div>`;
+}
+function sacPanel(P, I, u, isl, me) {
+  const has = G.m[isl][me] > 0, base = SAC[I.sz], iN = esc(islN(isl));
+  if (!has) return `<p class="small">${tr(`No tienes meeples normales en ${iN}: la acción no se ejecutará, pero ya has recuperado tus personajes. Puedes mover el jefe antes de sacrificar.`, `You have no regular meeples on ${iN}: the action will have no effect, but you have already recovered your characters. You can move the chief before sacrificing.`)}</p><div class="row"><button class="btn" data-action="sac">${tr('Sacrificar igualmente', 'Sacrifice anyway')}</button></div>`;
+  const canU = P.R[0] > 0 || P.R[2] > 0, canS = P.R[0] > 0 && P.R[2] > 0;
+  let b = `<p class="small">${tr(`Retiras 1 meeple de ${iN}: <b>+${base} PV</b>.`, `You remove 1 meeple from ${iN}: <b>+${base} VP</b>.`)}</p>`;
+  if (u) {
+    b += `<div class="row"><button class="btn small ${ui.bonus ? 'sel' : ''}" data-action="bonus" ${canU ? '' : 'disabled'}>${tr('Bonus +1 PV', 'Bonus +1 VP')}</button>${ui.bonus ? [0, 2].map(x => `<button class="btn small ${ui.pay === x ? 'sel' : ''}" data-action="pay" data-x="${x}" ${P.R[x] > 0 ? '' : 'disabled'}>${tr('pagar', 'pay')} ${resIcon(x)} ${resN(x, false)}</button>`).join('') : ''}</div>`;
+  } else b += `<div class="row"><button class="btn small ${ui.bonus ? 'sel' : ''}" data-action="bonus" ${canS ? '' : 'disabled'}>${tr(`Bonus +1 PV (pagas ${resIcon(0)} y ${resIcon(2)})`, `Bonus +1 VP (you pay ${resIcon(0)} and ${resIcon(2)})`)}</button></div>`;
+  const total = base + (ui.bonus ? 1 : 0);
+  return b + `<div class="row"><button class="btn primary" data-action="sac">${tr(`Sacrificar (+${total} PV)`, `Sacrifice (+${total} VP)`)}</button></div>`;
+}
+function moverPanel(me, isl, nb, tu) {
+  let h = `<p class="small">${tr(`Puntos de movimiento: <b>${tu.mp}</b>. Cada meeple que cruza entre la isla del jefe y una vecina gasta 1.`, `Movement points: <b>${tu.mp}</b>. Each meeple crossing between the chief’s island and a neighbour costs 1.`)}</p>`;
+  const R2 = G.P[me].R[2];
+  h += tu.cc ? `<p class="note">${tr('Ya has pagado el coco extra.', 'You already paid the extra coconut.')}</p>`
+    : `<div class="row"><button class="btn small" data-action="coco" ${R2 > 0 ? '' : 'disabled'}>${tr(`+1 punto pagando ${resIcon(2)} 1 coco`, `+1 point by paying ${resIcon(2)} 1 coconut`)}</button>${R2 > 0 ? '' : `<span class="note">${tr('No tienes cocos.', 'You have no coconuts.')}</span>`}</div>`;
+  h += nb.map(i => `<div class="mvrow"><span class="small"><b>${esc(islN(i))}</b> · ${tr('tuyos allí', 'yours there')}: ${G.m[i][me]}</span><span class="row"><button class="btn small" data-action="mv" data-f="${isl}" data-t="${i}" ${tu.mp > 0 && G.m[isl][me] > 0 ? '' : 'disabled'}>${tr('Llevar 1 →', 'Send 1 →')}</button><button class="btn small" data-action="mv" data-f="${i}" data-t="${isl}" ${tu.mp > 0 && G.m[i][me] > 0 ? '' : 'disabled'}>${tr('← Traer 1', '← Bring 1')}</button></span></div>`).join('') || `<p class="muted small">${tr('No hay islas vecinas activas.', 'No active neighbouring islands.')}</p>`;
+  if (!tu.bm) {
+    const rmE = ui.rm ? ui.rm.split('-').map(Number) : null;
+    const adds = rmE ? pairsOf(G).filter(([a, b]) => { if (sameEdge(rmE, a, b)) return false; const E = G.e.filter(e => !sameEdge(e, rmE[0], rmE[1])); if (hasEdge(E, a, b)) return false; return connected([...E, [a, b]]); }) : [];
+    h += `<div class="sub"><b>${tr('Recolocar un barco (gratis, una vez)', 'Relocate a boat (free, once)')}</b>
+      <div class="row"><select id="rm" aria-label="${tr('Barco a quitar', 'Boat to move')}"><option value="">${tr('Barco a mover…', 'Boat to move…')}</option>${G.e.map(([a, b]) => `<option value="${a}-${b}" ${ui.rm === `${a}-${b}` ? 'selected' : ''}>${esc(islN(a))} – ${esc(islN(b))}</option>`).join('')}</select>
+      <select id="add" aria-label="${tr('Nueva conexión', 'New connection')}" ${rmE ? '' : 'disabled'}><option value="">${tr('Nueva conexión…', 'New connection…')}</option>${adds.map(([a, b]) => `<option value="${a}-${b}" ${ui.add === `${a}-${b}` ? 'selected' : ''}>${esc(islN(a))} – ${esc(islN(b))}</option>`).join('')}</select>
+      <button class="btn small" data-action="boat" ${rmE && ui.add ? '' : 'disabled'}>${tr('Recolocar', 'Relocate')}</button></div>
+      <p class="note">${rmE && !adds.length ? tr('Quitar ese barco dejaría islas aisladas; elige otro.', 'Removing that boat would cut islands off; choose another.') : tr('El archipiélago debe seguir conectado y no se pueden duplicar conexiones.', 'The archipelago must stay connected and connections can’t be duplicated.')}</p></div>`;
+  } else h += `<p class="note">${tr('Ya has recolocado un barco.', 'You already relocated a boat.')}</p>`;
+  if (tu.st === 1) h += `<div class="row"><button class="btn small" data-action="mv-done">${tr('Terminar movimiento', 'Finish moving')}</button><span class="note">${tr('para poder mover el jefe después', 'so you can move the chief afterwards')}</span></div>`;
+  return h;
+}
+function evacPanel(me) {
+  const i = G.ev.i, I = ISL[i], P = G.P[me], hc = G.ch[me] === i, have = G.m[i][me], iN = esc(islN(i));
+  const shells = P.R[1] - (hc && P.R[1] >= 1 ? 1 : 0);
+  let maxN = 0; while (maxN < have && rescueCost(hc, maxN + 1) <= shells) maxN++;
+  const n = Math.min(ui.evN, maxN), opts = hc ? reach(G, i, i) : [];
+  const to = opts.includes(ui.evTo) ? ui.evTo : -1;
+  const lost = have - n;
+  let h = `<div class="panel turn"><span class="eyebrow">${tr(`¡Erupción en ${iN}!`, `${iN} is erupting!`)}</span><h3>${tr('Evacuación', 'Evacuation')}</h3>
+  <p>${tr(`Tienes aquí ${hc ? 'tu jefe y ' : ''}${meeples(have)}. Conchas: ${P.R[1]}.`, `You have ${hc ? 'your chief and ' : ''}${meeples(have)} here. Shells: ${P.R[1]}.`)}</p>`;
+  if (hc) h += `<div class="sub"><b>${tr('Tu jefe siempre se salva', 'Your chief is always saved')}</b><p class="small">${tr(`Ocupa el primer escalón de coste: ${P.R[1] >= 1 ? 'pagas 1 concha' : 'no tienes conchas, se salva gratis'}. ¿A qué isla va?`, `It takes the first cost step: ${P.R[1] >= 1 ? 'you pay 1 shell' : 'you have no shells, so it is saved for free'}. Which island does it go to?`)}</p><div class="row">${opts.map(x => `<button class="btn small ${to === x ? 'sel' : ''}" data-action="ev-to" data-i="${x}">${esc(islN(x))}</button>`).join('')}</div></div>`;
+  if (have) {
+    h += `<div class="sub"><b>${tr('Rescatar meeples', 'Rescue meeples')}</b><p class="small">${tr(`Coste progresivo ${hc ? '2, 3, 4…' : '1, 2, 3…'} conchas por meeple. Los rescatados vuelven a tu reserva.`, `Rising cost of ${hc ? '2, 3, 4…' : '1, 2, 3…'} shells per meeple. Rescued meeples return to your reserve.`)}</p>
+    <div class="row">${Array.from({ length: have + 1 }, (_, k) => `<button class="btn small ${n === k ? 'sel' : ''}" data-action="ev-n" data-n="${k}" ${k > maxN ? 'disabled' : ''}>${k} (${shellsTxt(rescueCost(hc, k))})</button>`).join('')}</div>
+    <p class="small">${lost ? tr(`Pierdes ${lost}: <b>−${lost * PEN[I.sz]} PV</b> ahora y −2 PV cada uno al final si siguen en el volcán.`, `You lose ${lost}: <b>−${lost * PEN[I.sz]} VP</b> now and −2 VP each at the end if they are still on the volcano.`) : tr('No pierdes ningún meeple.', 'You don’t lose any meeples.')}</p></div>`;
+  }
+  h += `<div class="row"><button class="btn primary" data-action="ev-ok" ${hc && opts.length && to < 0 ? 'disabled' : ''}>${tr('Confirmar evacuación', 'Confirm evacuation')}</button></div>`;
+  return h + `</div>`;
+}
+function endPanel() {
+  const f = G.fin || { order: G.P.map((_, s) => s), w: [] };
+  const title = f.w.length > 1 ? tr('Victoria compartida', 'Shared victory') : tr(`Gana ${esc(G.P[f.w[0]].nm)}`, `${esc(G.P[f.w[0]].nm)} wins`);
+  return `<div class="panel turn"><span class="eyebrow">${tr('Partida terminada', 'Game over')}</span><h2>${title}</h2>
+  <div class="tablewrap"><table><thead><tr><th>${tr('Jugador', 'Player')}</th><th>${tr('Mayorías', 'Majorities')}</th><th>${tr('Sacrif.', 'Sacrif.')}</th><th>${tr('Erupciones', 'Eruptions')}</th><th>${tr('Sets', 'Sets')}</th><th>${tr('Volcanes', 'Volcanoes')}</th><th>Total</th></tr></thead><tbody>
+  ${f.order.map(s => { const p = G.P[s], h = p.h; return `<tr class="${f.w.includes(s) ? 'win' : ''}"><td><span class="dot" style="background:${pc(s)};vertical-align:-2px"></span> ${esc(p.nm)}</td><td>${h.maj}</td><td>${h.sac}</td><td>${h.pen}</td><td>${h.set}</td><td>${h.vol}</td><td><b>${p.pv}</b></td></tr>`; }).join('')}
+  </tbody></table></div>
+  <div class="row">${isHost() ? `<button class="btn primary" data-action="again">${tr('Otra partida', 'Play again')}</button>` : `<span class="muted">${tr('El anfitrión puede empezar otra partida.', 'The host can start another game.')}</span>`}<button class="btn" data-action="leave">${tr('Salir', 'Leave')}</button></div></div>`;
+}
+function gameHTML() {
+  const me = mySeat();
+  const opt = {};
+  if (G.ph === 'resolve' && G.ord[G.t] === me && me >= 0 && !(ui.pending && ui.pending === stateKey(G))) {
+    const tu = G.tu;
+    if (!tu.cm && tu.st !== 1) opt.targets = reach(G, G.ch[me]);
+    if (ui.rm) opt.rm = ui.rm.split('-').map(Number);
+    if (ui.add) opt.preview = ui.add.split('-').map(Number);
+  }
+  if (G.ph === 'evac') opt.erupt = G.ev.i;
+  if (G.ph === 'evac' && G.ev.q[G.ev.k] === me && G.ch[me] === G.ev.i) opt.targets = reach(G, G.ev.i, G.ev.i);
+  const warn = !LOCAL && ON.role === 'guest' && !hostPeer() && Date.now() - ON.joinedAt > 4000 ? `<p class="banner">${tr('El anfitrión se ha desconectado. La partida sigue cuando vuelva a abrir la página.', 'The host has disconnected. The game resumes when they reopen the page.')}</p>` : '';
+  return `${headerHTML()}${warn}
+  <div class="board">
+    <div class="mapwrap">${mapSVG(opt)}</div>
+    <div class="side">${panelHTML()}${seatsHTML()}</div>
+  </div>
+  <div class="log" style="margin-top:16px"><span class="eyebrow">${tr('Cuaderno de bitácora', 'Logbook')}</span><ol>${G.log.slice(-14).reverse().map(l => fmtLog(l)).filter(Boolean).map(l => `<li>${l}</li>`).join('')}</ol></div>
+  ${LOCAL ? '' : connLine()}
+  ${rulesHTML()}`;
+}
+function rulesHTML() {
+  if (LANG === 'en') return `<details class="rules"><summary>Quick rules and prototype decisions</summary><div class="cols">
+  <div><b>The round</b><ul><li>Everyone picks a character in secret; if two or more match, they use the shared version.</li><li>Turns go in order from the first player. Before or after your action you may move your chief one boat hop.</li><li>Actions (except Witchcraft) happen on your chief’s island.</li><li>Colonize: you may pay 1 pig for 1 extra meeple. Move: you may pay 1 coconut for 1 extra point. Once per action each.</li><li>In rounds 6, 11, 15, 18, 20 and 21 an eruption card is revealed.</li></ul></div>
+  <div><b>Eruptions and scoring</b><ul><li>Threshold: small 1, medium 2, large 3 cards.</li><li>Evacuating costs 1, 2, 3… shells per piece; the chief takes the first step. Lost meeples: −3 / −2 / −1 VP.</li><li>After each eruption all active islands score: small 2/1, medium 3/1, large 4/2. Tie for 1st: everyone tied gets the 2nd-place points.</li><li>The game ends at the third volcano: pig+shell+coconut sets are worth 2 VP; each meeple on a volcano is −2 VP.</li></ul></div>
+  <div><b>Decisions where the rulebook is open</b><ul><li>Each player has ${MEEPLES} meeples.</li><li>At the start of each game the Great Island goes in the centre and the other six are placed around it in random order.</li><li>Boats only join neighbouring islands on the map (spokes and ring).</li><li>A boat hop passes through volcanoes to the next active island.</li><li>Witchcraft alone: the chosen card stays on top and the rest go to the bottom. Shared Witchcraft: you only look at the cards, without changing the order (shells still give extra cards).</li><li>Evacuation: the chief pays 1 shell if you have one; otherwise it is saved for free. Rescues continue from the next step.</li><li>The third eruption also scores majorities before the end.</li><li>After round 21 there is an eruption check every round.</li><li>If the deck runs out, the already revealed cards of still-active islands are reshuffled.</li></ul></div>
+  </div></details>`;
+  return `<details class="rules"><summary>Reglas rápidas y decisiones del prototipo</summary><div class="cols">
+  <div><b>La ronda</b><ul><li>Todos eligen un personaje en secreto; si dos o más coinciden, usan la versión compartida.</li><li>Se resuelve en orden desde el jugador inicial. Antes o después de tu acción puedes mover el jefe un tramo de barco.</li><li>Las acciones (salvo Brujería) ocurren en la isla de tu jefe.</li><li>Colonizar: puedes pagar 1 cerdo por 1 meeple más. Mover: puedes pagar 1 coco por 1 punto más. Una sola vez por acción.</li><li>En las rondas 6, 11, 15, 18, 20 y 21 se revela una carta de erupción.</li></ul></div>
+  <div><b>Erupciones y puntos</b><ul><li>Umbral: pequeña 1, mediana 2, grande 3 cartas.</li><li>Evacuar cuesta 1, 2, 3… conchas por pieza; el jefe ocupa el primer escalón. Perder meeples: −3 / −2 / −1 PV.</li><li>Tras cada erupción puntúan todas las islas activas: pequeña 2/1, mediana 3/1, grande 4/2. Empate en el 1.º: todos reciben lo del 2.º.</li><li>Fin al tercer volcán: sets de cerdo+concha+coco 2 PV; cada meeple en un volcán −2 PV.</li></ul></div>
+  <div><b>Decisiones tomadas donde el reglamento está abierto</b><ul><li>Cada jugador tiene ${MEEPLES} meeples.</li><li>Al empezar cada partida la Isla Mayor va en el centro y las otras seis se colocan a su alrededor en orden aleatorio.</li><li>Los barcos solo unen islas vecinas del mapa (radios y anillo).</li><li>Un tramo de barco atraviesa volcanes hasta la siguiente isla activa.</li><li>Brujería única: la carta elegida queda arriba y el resto va abajo. Brujería compartida: solo se miran las cartas, sin cambiar el orden (las conchas sí dan cartas extra).</li><li>Evacuación: el jefe paga 1 concha si la tiene; si no, se salva gratis. Los rescates siguen desde el siguiente escalón.</li><li>La tercera erupción también puntúa mayorías antes del final.</li><li>Después de la ronda 21 hay activación cada ronda.</li><li>Si el mazo se agota, se rebarajan las cartas ya reveladas de islas que siguen activas.</li></ul></div>
+  </div></details>`;
+}
+
+/* ---------- Dibujo y eventos ---------- */
+function render() {
+  const app = document.getElementById('app');
+  const ae = document.activeElement, aid = ae && ae.id;
+  let ss = null, se = null;
+  try { ss = ae.selectionStart; se = ae.selectionEnd; } catch (e) { /* no es un campo de texto */ }
+  let h;
+  try { h = G ? gameHTML() : ON.role ? lobbyHTML() : homeHTML(); }
+  catch (e) { console.error(e); h = `<p class="err">${tr('No se pudo dibujar la mesa', 'Could not draw the table')}: ${esc(e.message)}</p><button class="btn" data-action="leave">${tr('Volver al inicio', 'Back to start')}</button>`; }
+  app.innerHTML = h;
+  if (aid) { const el = document.getElementById(aid); if (el) { el.focus(); try { if (ss !== null) el.setSelectionRange(ss, se); } catch (e) { /* select */ } } }
+}
+document.getElementById('app').addEventListener('input', e => {
+  if (e.target.id === 'nm') { ON.nm = e.target.value; lsSet(NAME_KEY, cleanName(ON.nm)); }
+  if (e.target.id === 'code') ui.joinCode = e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '');
+});
+document.getElementById('app').addEventListener('change', e => {
+  if (e.target.id === 'rm') { ui.rm = e.target.value; ui.add = ''; render(); }
+  if (e.target.id === 'add') { ui.add = e.target.value; render(); }
+});
+document.getElementById('app').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.id === 'code') handle('join', {});
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.closest && e.target.closest('g[data-action]')) { e.preventDefault(); const g = e.target.closest('g[data-action]'); handle(g.dataset.action, g.dataset); }
+});
+document.getElementById('app').addEventListener('click', e => {
+  const b = e.target.closest('[data-action]');
+  if (!b || b.disabled) return;
+  handle(b.dataset.action, b.dataset);
+});
+function handle(a, d) {
+  const me = mySeat();
+  if (a === 'lang') { setLang(d.l); return; }
+  ui.err = '';
+  switch (a) {
+    case 'create': enterGame(rid(4), 'host'); return;
+    case 'join': enterGame(ui.joinCode, 'guest'); return;
+    case 'join-open': enterGame(d.code, 'guest'); return;
+    case 'solo-n': ui.soloN = Number(d.n); break;
+    case 'solo': startSolo(); return;
+    case 'leave': leaveGame(); return;
+    case 'lob-n': ON.lob.n = Number(d.n); publish(); saveState(); break;
+    case 'start': hostStart(); return;
+    case 'again':
+      if (LOCAL) { startSolo(); return; }
+      G = null; ON.lastLob = null; publish(); announce(); saveState(); break;
+    case 'pick': act({ t: 'pick', c: Number(d.c) }); return;
+    case 'chief': act({ t: 'chief', to: Number(d.i) }); return;
+    case 'isl':
+      if (G && G.ph === 'evac') { ui.evTo = Number(d.i); break; }
+      act({ t: 'chief', to: Number(d.i) }); return;
+    case 'colonize': act({ t: 'act', pig: !!ui.pig }); return;
+    case 'pig': ui.pig = !ui.pig; break;
+    case 'coco': act({ t: 'coco' }); return;
+    case 'prod-add': if (ui.prod.length < 2) ui.prod.push(Number(d.x)); break;
+    case 'prod-clear': ui.prod = []; break;
+    case 'extra': ui.extra = Number(d.x); break;
+    case 'produce': act({ t: 'act', pick: ui.prod.slice(), extra: ui.extra }); return;
+    case 'sh': ui.sh = Number(d.n); break;
+    case 'witch-look': act({ t: 'act', sh: ui.sh }); return;
+    case 'witch-top': act({ t: 'witch', top: Number(d.j) }); return;
+    case 'bonus': ui.bonus = !ui.bonus; if (ui.bonus && me >= 0 && G.P[me].R[ui.pay] < 1) ui.pay = G.P[me].R[2] > 0 ? 2 : 0; break;
+    case 'pay': ui.pay = Number(d.x); break;
+    case 'sac': act({ t: 'act', bonus: ui.bonus, pay: ui.pay }); return;
+    case 'mv': act({ t: 'mv', f: Number(d.f), to: Number(d.t) }); return;
+    case 'mv-done': act({ t: 'done' }); return;
+    case 'boat': { const r = ui.rm.split('-').map(Number), ad = ui.add.split('-').map(Number); act({ t: 'boat', rm: r, add: ad }); return; }
+    case 'end-turn': act({ t: 'end' }); return;
+    case 'undo': act({ t: 'undo' }); return;
+    case 'unpick': act({ t: 'unpick' }); return;
+    case 'ev-n': ui.evN = Number(d.n); break;
+    case 'ev-to': ui.evTo = Number(d.i); break;
+    case 'ev-ok': act({ t: 'evac', n: ui.evN, to: ui.evTo }); return;
+  }
+  render();
+}
+
+/* ---------- Arranque ---------- */
+async function start(hot) {
+  ON.tk = (() => { let t = lsGet(TOKEN_KEY); if (typeof t !== 'string' || t.length < 8) { t = rid(12); lsSet(TOKEN_KEY, t); } return t; })();
+  ON.nm = lsGet(NAME_KEY) || '';
+  const savedLocal = (hot && hot.local) || lsGet(LOCAL_KEY);
+  const savedOnline = lsGet(ONLINE_KEY);
+  if (savedLocal && Array.isArray(savedLocal.P) && savedLocal.ph !== 'end' && !(savedOnline && savedOnline.role)) { G = savedLocal; LOCAL = true; }
+  render();
+  scheduleBots();
+  const room = await getRoom();
+  ON.lobby = room;
+  ON.status = room ? 'ok' : 'none';
+  if (room) {
+    room.onConnection(c => { ON.connected = c; render(); }, e => { ON.roomErr = (e && e.code) || 'error'; render(); });
+    room.onPeers(() => { if (!G) render(); }, () => {});
+    if (!LOCAL && savedOnline && savedOnline.role && savedOnline.code) await enterGame(savedOnline.code, savedOnline.role, savedOnline);
+  }
+  render();
+  setInterval(() => { if (ON.role === 'guest' || (!G && ON.role)) render(); }, 3000);
+}
+window.claude?.hot?.snapshot?.(() => ({ local: LOCAL ? G : null }));
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+</script>
